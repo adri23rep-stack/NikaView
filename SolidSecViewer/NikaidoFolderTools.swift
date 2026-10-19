@@ -59,7 +59,7 @@ struct NikaidoCompareFolders: View {
         } message: {
             Text("Los destinos modificados se respaldarán primero. Nunca se eliminarán archivos por estar ausentes en el origen.")
         }
-        .onChange(of: directionLeft) { _ in differences = [] }
+        .task(id: directionLeft) { differences = [] }
     }
 
     private func inspect() {

@@ -122,9 +122,10 @@ struct NikaidoFileInspector: View {
             if let error { Text(error).foregroundStyle(.red) }
         }
         .task { await load() }
-        .onChange(of: chosenTable) { table in
-            guard let table else { return }
-            rows = Self.readTable(at: url, name: table)
+        .task(id: chosenTable) {
+            if let table = chosenTable {
+                rows = Self.readTable(at: url, name: table)
+            }
         }
     }
 
