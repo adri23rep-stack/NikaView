@@ -4,9 +4,23 @@
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
 >
-> **Versión actual del proyecto:** `0.10.5` (build `30`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
+> **Versión actual del proyecto:** `0.11.0` (build `31`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
 
 NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrollando. La aplicación todavía muestra el nombre **Nikaido Explorer** y mantiene identificadores internos anteriores para proteger la compatibilidad de los datos existentes. Cambiar el nombre visible se hará por separado, después de las pruebas correspondientes.
+
+## Novedades en v0.11.0
+
+- **Fotos y videos a la bóveda:** selector del carrete, cifrado al importar y opción de solicitar el borrado de originales **solo tras verificar que se importaron todos**, con confirmación adicional de iOS.
+- **Herramientas avanzadas:** inspector de cabeceras IPA, ZIP, DEB y dylib; hexadecimal inicial; vistas JSON/plist; tablas SQLite en modo lectura.
+- **Búsqueda local:** nombres, contenido de archivos y PDF, objetos y texto reconocidos en imágenes de carpetas autorizadas (sin conexión a servidores).
+- **Archivos:** comparación de paneles, sincronización unidireccional con copias de respaldo, mapa de espacio, renombrado masivo con vista previa, exportación de imágenes sin metadatos y hasta diez revisiones locales de textos.
+- **Pulido:** diálogo para mover o copiar al soltar, carpetas recientes y favoritas desde Inicio, y acceso directo a SMB.
+
+Las herramientas tienen límites para proteger el rendimiento: el inspector no hace análisis profundo de firmas, la sincronización no borra ni replica continuamente y el limpiador de metadatos todavía no procesa video. **Estas mejoras pasaron GitHub Actions, pero necesitan pruebas manuales en iPhone.**
+
+### Próximas funciones
+
+Las funciones que aún faltan (Share Extension real de iOS, Picture in Picture, velocidad/posición de video, desplazamiento automático al arrastrar, mejoras completas de VoiceOver y otras ampliaciones) están documentadas en [el roadmap del proyecto](https://github.com/adri23rep-stack/NikaView/issues/1).
 
 ## ¿Qué incluye?
 
