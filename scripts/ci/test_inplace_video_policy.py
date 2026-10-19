@@ -52,7 +52,7 @@ for required in (
     if required not in session + crypto:
         fail(f"falta cancelación segura de verificación larga: {required}")
 
-if "VideoPlayer(player:" not in viewer:
+if "NikaidoSecureVideoView(player: playback.player" not in viewer:
     fail("la colección .sec no usa VideoPlayer")
 
 if viewer.count("secKey: key,") != 1:
@@ -68,6 +68,9 @@ for forbidden in (
     if forbidden in video:
         fail(f"video streaming no debe crear plaintext temporal: {forbidden}")
 
+if "NikaidoSecureVideoView.swift in Sources" not in project:
+    fail("falta registrar el reproductor seguro en PBXSources")
+
 if "StoredSecVideoPlayer.swift in Sources" not in project:
     fail("StoredSecVideoPlayer.swift no está en PBXSources")
 
@@ -77,14 +80,14 @@ if "SecDirectVideoPlayer.swift in Sources" not in project:
 if "PrivateVaultVideoPlayer.swift in Sources" not in project:
     fail("PrivateVaultVideoPlayer.swift no está en PBXSources")
 
-if "VideoPlayer(player:" not in private_view:
+if "NikaidoSecureVideoView(player: playback.player" not in private_view:
     fail("Nikaido Vault no reproduce video por rangos")
 
 for forbidden in ("temporaryDirectory", "Data(contentsOf:"):
     if forbidden in private_video:
         fail(f"video de Nikaido Vault no debe usar plaintext temporal: {forbidden}")
 
-if "VideoPlayer(player:" not in media_viewer:
+if "NikaidoSecureVideoView(player: playback.player" not in media_viewer:
     fail("el lector directo .sec sigue sin streaming de video")
 
 for forbidden in ("temporaryDirectory", "Data(contentsOf:"):
