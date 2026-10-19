@@ -25,7 +25,7 @@ checks = {
     'incoming file needs explicit choice': 'confirmationDialog(' in content and 'importIncomingDocument(intoVault: false)' in content,
     'incoming import copies, no auto delete': 'ExplorerFileEngine.importFile(' in content and 'privateVault.importFiles(' in content,
     'document handoff registered': 'CFBundleDocumentTypes' in info and 'LSItemContentTypes' in info,
-    'version not downgraded': (len(re.findall(r'MARKETING_VERSION = (\\d+)\\.(\\d+)\\.(\\d+);', pbx)) == 2 and all(tuple(map(int, v)) >= (0, 11, 1) for v in re.findall(r'MARKETING_VERSION = (\\d+)\\.(\\d+)\\.(\\d+);', pbx)) and len(re.findall(r'CURRENT_PROJECT_VERSION = (\\d+);', pbx)) == 2 and all(int(v) >= 32 for v in re.findall(r'CURRENT_PROJECT_VERSION = (\\d+);', pbx))),
+    'version not downgraded': (len(re.findall(r'MARKETING_VERSION = (\d+)\.(\d+)\.(\d+);', pbx)) == 2 and all(tuple(map(int, v)) >= (0, 11, 1) for v in re.findall(r'MARKETING_VERSION = (\d+)\.(\d+)\.(\d+);', pbx)) and len(re.findall(r'CURRENT_PROJECT_VERSION = (\d+);', pbx)) == 2 and all(int(v) >= 32 for v in re.findall(r'CURRENT_PROJECT_VERSION = (\d+);', pbx))),
 }
 for name, ok in checks.items():
     print(('OK   ' if ok else 'FAIL ') + name)
