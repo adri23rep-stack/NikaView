@@ -4,9 +4,19 @@
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
 >
-> **Versión actual del proyecto:** `0.11.0` (build `31`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
+> **Versión actual del proyecto:** `0.11.2` (build `33`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
 
 NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrollando. La aplicación todavía muestra el nombre **Nikaido Explorer** y mantiene identificadores internos anteriores para proteger la compatibilidad de los datos existentes. Cambiar el nombre visible se hará por separado, después de las pruebas correspondientes.
+
+## Novedades recientes — v0.11.1 y v0.11.2
+
+- **Videos:** guardar el punto de reproducción en el Llavero, ajustar velocidad y Picture in Picture para videos **no cifrados** del explorador cuando iOS lo permita.
+- **Arrastrar y soltar:** desplazamiento automático cerca de los bordes.
+- **Archivos:** inspector de IPA/ZIP, Mach-O/dylib y DEB con vista hexadecimal, SQLite paginado y mejoras de VoiceOver.
+- **Abrir en NikaView:** recepción de documentos por el sistema en instalaciones independientes; **no equivale** a una Share Extension funcional dentro de LiveContainer.
+- Las colecciones cifradas siguen bloqueando el video al salir de la bóveda. Algunas funciones requieren pruebas en iPhone y no se afirma que PiP esté disponible en LiveContainer.
+
+**Descarga:** [NikaView v0.11.2](https://github.com/adri23rep-stack/NikaView/releases/tag/v0.11.2) · [Pendientes](https://github.com/adri23rep-stack/NikaView/issues/1).
 
 ## Novedades en v0.11.0
 
