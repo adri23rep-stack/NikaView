@@ -165,7 +165,7 @@ struct NikaidoFileInspector: View {
         databaseTables = result.2
     }
 
-    private static func listTables(at url: URL) -> [String] {
+    nonisolated private static func listTables(at url: URL) -> [String] {
         guard ["sqlite", "sqlite3", "db"].contains(url.pathExtension.lowercased()) else { return [] }
         var db: OpaquePointer?
         guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil) == SQLITE_OK else {
@@ -183,7 +183,7 @@ struct NikaidoFileInspector: View {
         return tables
     }
 
-    private static func readTable(at url: URL, name: String) -> [String] {
+    nonisolated private static func readTable(at url: URL, name: String) -> [String] {
         var db: OpaquePointer?
         guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil) == SQLITE_OK else {
             if db != nil { sqlite3_close(db) }
@@ -252,10 +252,10 @@ struct NikaidoContentSearch: View {
         let base = root
         Task {
             let result = await Task.detached(priority: .userInitiated) { () -> ([NikaidoSearchHit], Int) in
-                guard let iterator = FileManager.default.enumerator(at: base, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey], options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { return ([], 0) }
+                let iterator = NikaidoFileEnumerator.list(base, limit: 1500)
                 var found: [NikaidoSearchHit] = []
                 var count = 0
-                for case let url as URL in iterator {
+                for url in iterator {
                     guard count < 1000, found.count < 100 else { break }
                     let v = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
                     guard v?.isRegularFile == true, v?.isSymbolicLink != true else { continue }
@@ -289,5 +289,22 @@ struct NikaidoContentSearch: View {
             searched = result.1
             working = false
         }
+    }
+}
+
+// Foundation's directory enumerator must be iterated in a synchronous context;
+// async Tasks call this bounded helper rather than invoking its iterator directly.
+enum NikaidoFileEnumerator {
+    nonisolated static func list(_ root: URL, limit: Int) -> [URL] {
+        guard let walker = FileManager.default.enumerator(
+            at: root, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey],
+            options: [.skipsPackageDescendants]
+        ) else { return [] }
+        var paths: [URL] = []
+        for case let item as URL in walker {
+            guard paths.count < limit else { break }
+            paths.append(item)
+        }
+        return paths
     }
 }

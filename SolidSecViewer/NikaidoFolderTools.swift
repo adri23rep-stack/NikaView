@@ -68,10 +68,10 @@ struct NikaidoCompareFolders: View {
         let dest = directionLeft ? right : left
         Task {
             let result = await Task.detached(priority: .userInitiated) { () -> ([NikaidoComparedFile], Int) in
-                guard let walker = FileManager.default.enumerator(at: origin, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey], options: [.skipsPackageDescendants]) else { return ([], 0) }
+                let walker = NikaidoFileEnumerator.list(origin, limit: 2400)
                 var result: [NikaidoComparedFile] = []
                 var count = 0
-                for case let file as URL in walker {
+                for file in walker {
                     guard count < 2000 else { break }
                     let values = try? file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey])
                     guard values?.isRegularFile == true && values?.isSymbolicLink != true else { continue }
@@ -183,7 +183,7 @@ struct NikaidoSpaceMap: View {
                 guard values?.isSymbolicLink != true else { continue }
                 if values?.isRegularFile == true { bytes = Int64(values?.fileSize ?? 0); scanned += 1 }
                 else if let walker = FileManager.default.enumerator(at: child, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]) {
-                    for case let file as URL in walker {
+                    for file in walker {
                         guard scanned < 5000 else { break }
                         let value = try? file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
                         guard value?.isRegularFile == true && value?.isSymbolicLink != true else { continue }
