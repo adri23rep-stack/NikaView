@@ -56,6 +56,18 @@ checks = {
     "home registered": "HomeView.swift" in pbx,
     "vault unlock has two options": "unlockOptionCard" in vault and "passwordPanelVisible" in vault,
     ".sec unlock has two options": "secOptionCard" in sec_viewer and "NikaidoSecFaceID" in sec_viewer,
+    ".sec tap skips redundant Face ID": (
+        "if entry.isSecCollectionFolder {\n                // The .sec viewer prompts" in vault
+        and "selectedSecFolder = entry\n            } else if entry.kind == .folder" in vault
+    ),
+    ".sec menu skips redundant Face ID": (
+        "if entry.isSecCollectionFolder {\n                Button {\n                    // Same direct route as tapping the collection.\n                    selectedSecFolder = entry" in vault
+    ),
+    ".sec remains encrypted until password or Face ID": (
+        "if session.isUnlocked {\n                    gallery\n                } else {\n                    unlock" in sec_viewer
+        and "await session.unlock(" in sec_viewer
+        and "unlockWithFaceID()" in sec_viewer
+    ),
     ".sec password change (safe copy)": "makeRekeyedCopy" in sec_viewer and "StoredSecRekeyView" in sec_viewer and "encodeBase64URL" in sec_crypto,
     "face id store diagnostics": "NikaidoBiometricEnableResult" in bio and "storeFailed" in vault,
 }

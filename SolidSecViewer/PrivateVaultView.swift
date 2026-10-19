@@ -900,9 +900,9 @@ struct PrivateVaultView: View {
     private func entryCard(_ entry: PrivateVaultEntry) -> some View {
         Button {
             if entry.isSecCollectionFolder {
-                protectedOpen("Abrir galería protegida") {
-                    selectedSecFolder = entry
-                }
+                // The .sec viewer prompts for its own password or Face ID.
+                // Do not ask for an extra vault-level Face ID here.
+                selectedSecFolder = entry
             } else if entry.kind == .folder {
                 vaultSearch = ""
                 currentFolderID = entry.id
@@ -961,9 +961,8 @@ struct PrivateVaultView: View {
         .contextMenu {
             if entry.isSecCollectionFolder {
                 Button {
-                    protectedOpen("Abrir galería protegida") {
-                        selectedSecFolder = entry
-                    }
+                    // Same direct route as tapping the collection.
+                    selectedSecFolder = entry
                 } label: {
                     Label(
                         "Abrir galería .sec",
