@@ -1,0 +1,229 @@
+name: Build Nikaido Explorer IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "SolidSecViewer/**"
+      - "SolidSecViewer.xcodeproj/**"
+      - "scripts/**"
+      - "tools/**"
+      - ".github/workflows/build-ipa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Audit, build and validate unsigned iOS IPA
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Toolchain preflight
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          swiftc --version
+          plutil -lint SolidSecViewer/Info.plist
+          plutil -lint SolidSecViewer.xcodeproj/project.pbxproj
+          plutil -extract NSLocalNetworkUsageDescription raw SolidSecViewer/Info.plist >/dev/null
+
+          while IFS= read -r source; do
+            xcrun swiftc -frontend -swift-version 5 -parse "$source"
+          done < <(find SolidSecViewer -maxdepth 1 -name '*.swift' -print | sort)
+
+          python3 -m py_compile tools/LANTransfer/send_sec_collection.py scripts/ci/audit_project.py scripts/ci/test_lifecycle_policy.py scripts/ci/test_inplace_video_policy.py scripts/ci/test_nikaido_reliability.py scripts/ci/test_diagnostics_v081.py scripts/ci/test_video_thumbnails_v082.py scripts/ci/test_explorer_core_v090.py scripts/ci/test_explorer_core_v010.py scripts/ci/test_vault_auth_global_files_v0104.py
+          python3 scripts/ci/audit_project.py
+          python3 scripts/ci/test_lifecycle_policy.py
+          python3 scripts/ci/test_inplace_video_policy.py
+          python3 scripts/ci/test_nikaido_reliability.py
+          python3 scripts/ci/test_diagnostics_v081.py
+          python3 scripts/ci/test_video_thumbnails_v082.py
+          python3 scripts/ci/test_explorer_core_v090.py
+          python3 scripts/ci/test_explorer_core_v010.py
+          python3 scripts/ci/test_vault_auth_global_files_v0104.py
+
+          if grep -R --line-number --fixed-strings "ContentUnavailableView" SolidSecViewer; then
+            echo "ERROR: ContentUnavailableView requiere iOS 17+."
+            exit 1
+          fi
+
+          if grep -R --line-number --fixed-strings ".onChange(of:" SolidSecViewer; then
+            echo "ERROR: este target iOS 16 usa notificaciones UIKit para lifecycle."
+            exit 1
+          fi
+
+      - name: Crypto and .sec parser self-test
+        id: selftest
+        continue-on-error: true
+        run: bash scripts/ci/run_selftest.sh
+
+      - name: Resolve Swift packages
+        id: packages
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          mkdir -p build/packages
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project SolidSecViewer.xcodeproj \
+            -clonedSourcePackagesDirPath "$PWD/build/packages/SourcePackages" \
+            2>&1 | tee build/packages/resolve.log
+
+      - name: PC companion self-test
+        id: pctest
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 -m venv build/pc-selftest-venv
+          build/pc-selftest-venv/bin/python -m pip install --upgrade pip
+          build/pc-selftest-venv/bin/python -m pip install -r tools/LANTransfer/requirements.txt
+          build/pc-selftest-venv/bin/python scripts/ci/test_pc_sender.py \
+            2>&1 | tee build/pc-selftest.log
+
+      - name: Build arm64 iPhone app
+        id: iosbuild
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+
+          rm -rf build/ios
+          mkdir -p build/ios
+
+          xcodebuild \
+            -project SolidSecViewer.xcodeproj \
+            -target SolidSecViewer \
+            -clonedSourcePackagesDirPath "$PWD/build/packages/SourcePackages" \
+            -configuration Release \
+            -sdk iphoneos \
+            -resultBundlePath "$PWD/build/ios/SolidSecViewer.xcresult" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            IPHONEOS_DEPLOYMENT_TARGET=16.0 \
+            CONFIGURATION_BUILD_DIR="$PWD/build/ios/Products" \
+            OBJROOT="$PWD/build/ios/obj" \
+            SYMROOT="$PWD/build/ios/sym" \
+            build \
+            2>&1 | tee build/ios/xcodebuild.log
+
+      - name: Validate LiveContainer guest bundle
+        id: validate
+        if: steps.iosbuild.outcome == 'success'
+        continue-on-error: true
+        run: bash scripts/ci/validate_bundle.sh
+
+      - name: Reject project source warnings
+        id: warningguard
+        if: steps.iosbuild.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          mkdir -p build/diagnostics
+          if grep -E -n \
+            'SolidSecViewer/[^:]+\.swift:[0-9]+:[0-9]+: warning:' \
+            build/ios/xcodebuild.log \
+            > build/diagnostics/project-source-warnings.txt; then
+            cat build/diagnostics/project-source-warnings.txt
+            echo "ERROR: Nikaido Explorer compiló con warnings."
+            exit 1
+          fi
+          : > build/diagnostics/project-source-warnings.txt
+          echo "PROJECT SOURCE WARNINGS: NONE"
+
+      - name: Write CI status
+        if: always()
+        run: |
+          mkdir -p build/diagnostics
+          {
+            echo "selftest=${{ steps.selftest.outcome }}"
+            echo "packages=${{ steps.packages.outcome }}"
+            echo "pctest=${{ steps.pctest.outcome }}"
+            echo "iosbuild=${{ steps.iosbuild.outcome }}"
+            echo "validate=${{ steps.validate.outcome }}"
+            echo "warningguard=${{ steps.warningguard.outcome }}"
+          } | tee build/diagnostics/status.txt
+
+          if [ -f build/ios/xcodebuild.log ]; then
+            grep -E -n "error:|warning:|BUILD FAILED|BUILD SUCCEEDED" \
+              build/ios/xcodebuild.log \
+              > build/diagnostics/compiler-summary.txt || true
+          fi
+
+      - name: Gate audited build
+        if: always()
+        run: |
+          set -euo pipefail
+
+          if [ "${{ steps.iosbuild.outcome }}" != "success" ]; then
+            echo "::error title=iOS build failed::Xcode failed before bundle validation. See the compiler summary below."
+            if [ -f build/diagnostics/compiler-summary.txt ]; then
+              cat build/diagnostics/compiler-summary.txt
+            elif [ -f build/ios/xcodebuild.log ]; then
+              grep -E -n "error:|warning:|BUILD FAILED" build/ios/xcodebuild.log || true
+            fi
+            exit 1
+          fi
+
+          test "${{ steps.selftest.outcome }}" = "success"
+          test "${{ steps.packages.outcome }}" = "success"
+          test "${{ steps.pctest.outcome }}" = "success"
+          test "${{ steps.iosbuild.outcome }}" = "success"
+          test "${{ steps.validate.outcome }}" = "success"
+          test "${{ steps.warningguard.outcome }}" = "success"
+
+      - name: Package and validate IPA
+        run: bash scripts/ci/package_ipa.sh
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v6
+        with:
+          name: NikaidoExplorer-LiveContainer-v0.10.3
+          path: build/package/NikaidoExplorer-LiveContainer-v0.10.3.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload diagnostics if anything fails
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: NikaidoExplorer-build-diagnostics-v0.10.3
+          path: |
+            build/selftest/selftest.log
+            build/selftest/SecCollectionSelfTest-compile.log
+            build/selftest/SecCollectionSelfTest-runtime.log
+            build/selftest/PrivateVaultSelfTest-compile.log
+            build/selftest/PrivateVaultSelfTest-runtime.log
+            build/selftest/IndexCompatibilitySelfTest-compile.log
+            build/selftest/IndexCompatibilitySelfTest-runtime.log
+            build/packages/resolve.log
+            build/pc-selftest.log
+            build/ios/xcodebuild.log
+            build/ios/SolidSecViewer.xcresult
+            build/validation/validation.log
+            build/validation/file.txt
+            build/validation/lipo.txt
+            build/validation/macho-header.txt
+            build/validation/macho-load-commands.txt
+            build/validation/dependencies.txt
+            build/validation/dependency-paths.txt
+            build/diagnostics/status.txt
+            build/diagnostics/compiler-summary.txt
+            build/diagnostics/project-source-warnings.txt
+          if-no-files-found: ignore
+          retention-days: 7

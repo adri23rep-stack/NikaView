@@ -1,0 +1,9 @@
+# Stable cross-platform line endings
+*.bat text eol=crlf
+*.sh text eol=lf
+*.swift text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.plist text eol=lf
+*.pbxproj text eol=lf

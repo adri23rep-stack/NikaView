@@ -1,0 +1,40 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+APP = ROOT / "SolidSecViewer"
+PBX = (ROOT / "SolidSecViewer.xcodeproj" / "project.pbxproj").read_text(encoding="utf-8")
+view = (APP / "ExplorerView.swift").read_text(encoding="utf-8")
+queue = (APP / "ExplorerOperationQueue.swift").read_text(encoding="utf-8")
+trash = (APP / "ExplorerTrashManager.swift").read_text(encoding="utf-8")
+drag = (APP / "ExplorerDragDrop.swift").read_text(encoding="utf-8")
+smb = (APP / "ExplorerSMB.swift").read_text(encoding="utf-8")
+extras = (APP / "NikaidoExtras.swift").read_text(encoding="utf-8")
+preview = (APP / "ExplorerPreviewAndShare.swift").read_text(encoding="utf-8")
+
+checks = {
+    "drag type": "com.teamnikaido.explorer-items" in drag,
+    "drag payload": "ExplorerDragPayload" in drag and "onDropProviders" in view,
+    "async-safe drag lock": "lock.withLock" in drag,
+    "split SwiftUI composition": "lifecycleConfiguredExplorer" in view and "explorerLayout" in view,
+    "editor limit is nonisolated": "ExplorerTextEditorLimits.maximumBytes" in extras,
+    "preview has close control": "ExplorerPreviewSheet" in preview and "dismiss()" in preview,
+    "media thumbnail preference": "showMediaThumbnails" in view,
+    "media thumbnail generator": "QLThumbnailGenerator" in view,
+    "queue serial worker": "while !pending.isEmpty" in queue and "removeFirst()" in queue,
+    "queue UI": "Cola de operaciones" in view,
+    "trash hidden root": '.NikaidoTrash' in trash,
+    "trash restore": "func restore" in trash and "undoLast" in trash,
+    "delete uses trash": "trash.moveToTrash" in view,
+    "undo UI": "Deshacer última eliminación" in view,
+    "SMB package": 'https://github.com/amosavian/AMSMB2' in PBX,
+    "SMB dynamic embed phase": "PBXCopyFilesBuildPhase" in PBX and "Embed Frameworks" in PBX and "A046 /* AMSMB2 in Embed Frameworks */" in PBX,
+    "SMB CodeSignOnCopy": "CodeSignOnCopy" in PBX and "RemoveHeadersOnCopy" in PBX,
+    "SMB listing": "contentsOfDirectory" in smb and "listShares" in smb,
+    "SMB download": "func download" in smb,
+    "SMB upload": "func upload" in smb,
+    "SMB password not persisted": "@AppStorage" not in smb and "UserDefaults" not in smb,
+}
+failed = [name for name, ok in checks.items() if not ok]
+if failed:
+    raise SystemExit("V0.10 EXPLORER GUARD FAILED: " + ", ".join(failed))
+print("EXPLORER CORE V0.10.x: OK")

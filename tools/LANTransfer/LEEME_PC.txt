@@ -1,0 +1,85 @@
+NIKAIDO BRIDGE / NIKAIDO LINK v4 — PC COMPANION
+================================================
+
+OBJETIVO
+--------
+Transferir desde Windows una colección cifrada `.sec` grande hacia Nikaido Vault sin
+subirla a iCloud y sin guardar el ZIP completo en el iPhone.
+
+PRIMERA VEZ
+-----------
+Ejecuta:
+
+  PREPARAR_PC.bat
+
+El preparador crea `tools\LANTransfer\.venv`, instala las dependencias del sender y
+verifica AES-GCM. El entorno Python es privado de este companion y no modifica tus
+otros proyectos.
+
+TRANSFERIR
+----------
+iPhone:
+
+  Nikaido Explorer -> Nikaido Vault -> Nikaido Link
+
+Windows:
+
+  NIKAIDO_BRIDGE.bat
+
+Puedes arrastrar:
+- un ZIP que contenga una colección `.sec`; o
+- una carpeta `.sec` plana.
+
+Introduce IP, puerto y código mostrados por Nikaido Link.
+
+QUÉ VIAJA
+---------
+El ZIP NO viaja. Nikaido Bridge lo lee localmente por streaming y manda únicamente
+los archivos ya cifrados de la colección seleccionada. El iPhone vuelve a envolver
+cada archivo dentro de Nikaido Vault con AES-256-GCM.
+
+RESUME v4
+---------
+Si la conexión se corta:
+- el archivo parcial actual se descarta;
+- cada archivo que ya terminó permanece cifrado en `pending`;
+- al volver a usar la misma fuente, Nikaido Link devuelve los índices terminados;
+- Nikaido Bridge los salta y continúa con los restantes.
+
+El resume es por archivo completo. Un archivo individual cortado a mitad se repite.
+
+CONFIRMACIÓN FINAL
+------------------
+Nikaido Bridge ya NO considera éxito simplemente haber enviado el último byte.
+Espera un ACK cifrado del iPhone después de que Nikaido Vault haya hecho commit del
+índice.
+
+Éxito esperado:
+
+  [OK] TRANSFERENCIA CONFIRMADA POR NIKAIDO VAULT.
+
+Si el ACK se pierde después del commit, vuelve a ejecutar la misma fuente: Nikaido
+Vault reconoce el transferID ya guardado y responde `alreadyCommitted`, sin duplicar
+la colección.
+
+VALIDACIONES
+------------
+- máximo 500000 entradas durante discovery de ZIP;
+- máximo 200000 archivos de colección;
+- máximo 100 GB anunciado;
+- nombres limitados y rutas traversal/absolutas/symlinks rechazadas;
+- ZIP con contraseña rechazado (la `.sec` ya está cifrada);
+- subcarpetas físicas `.sec` rechazadas por ahora;
+- frame AES-GCM + secuencia autenticada;
+- tamaños por archivo y total comprobados;
+- espacio libre + margen calculado sobre bytes que faltan por recibir.
+
+CONSEJO PARA TRANSFERENCIAS GRANDES
+-----------------------------------
+- PC por Ethernet si puedes;
+- iPhone en Wi-Fi estable y cargando;
+- Nikaido Explorer en primer plano;
+- evita cambiar de red.
+
+La gracia de lifecycle tolera overlays/transiciones cortas, pero iOS sigue controlando
+el tiempo real de background.

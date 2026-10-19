@@ -1,0 +1,373 @@
+// !$*UTF8*$!
+{
+    archiveVersion = 1;
+    classes = {};
+    objectVersion = 56;
+    objects = {
+
+/* Begin PBXBuildFile section */
+        A001 /* NikaidoExplorerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B001 /* NikaidoExplorerApp.swift */; };
+        A002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B002 /* ContentView.swift */; };
+        A003 /* FolderPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B003 /* FolderPicker.swift */; };
+        A004 /* VaultItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B004 /* VaultItem.swift */; };
+        A005 /* SecCollectionCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = B005 /* SecCollectionCrypto.swift */; };
+        A006 /* VaultSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B006 /* VaultSession.swift */; };
+        A007 /* VaultThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B007 /* VaultThumbnail.swift */; };
+        A008 /* MediaViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B008 /* MediaViewer.swift */; };
+        A009 /* PrivateVaultCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = B010 /* PrivateVaultCrypto.swift */; };
+        A010 /* PrivateVaultModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B011 /* PrivateVaultModel.swift */; };
+        A011 /* PrivateVaultSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B012 /* PrivateVaultSession.swift */; };
+        A012 /* PrivateVaultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B013 /* PrivateVaultView.swift */; };
+        A013 /* ZipFilePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B014 /* ZipFilePicker.swift */; };
+        A014 /* SecZipImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B015 /* SecZipImporter.swift */; };
+        A015 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = Z001 /* ZIPFoundation */; };
+        A016 /* PrivacyShield.swift in Sources */ = {isa = PBXBuildFile; fileRef = B016 /* PrivacyShield.swift */; };
+        A018 /* StoredSecZipViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B018 /* StoredSecZipViewer.swift */; };
+        A019 /* LANVaultReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B019 /* LANVaultReceiver.swift */; };
+        A020 /* LANReceiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B020 /* LANReceiveView.swift */; };
+        A021 /* StoredSecCollectionViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B021 /* StoredSecCollectionViewer.swift */; };
+        A022 /* ImageDownsampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B022 /* ImageDownsampler.swift */; };
+        A023 /* LANTransferActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B023 /* LANTransferActivity.swift */; };
+        A024 /* StoredSecVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B024 /* StoredSecVideoPlayer.swift */; };
+        A025 /* NikaidoTransferJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B025 /* NikaidoTransferJournal.swift */; };
+        A026 /* NikaidoVaultHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = B026 /* NikaidoVaultHealth.swift */; };
+        A027 /* NikaidoVaultMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B027 /* NikaidoVaultMigration.swift */; };
+        A028 /* SecDirectVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B028 /* SecDirectVideoPlayer.swift */; };
+        A029 /* PrivateVaultVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B029 /* PrivateVaultVideoPlayer.swift */; };
+        A030 /* SWCompression in Frameworks */ = {isa = PBXBuildFile; productRef = Z002 /* SWCompression */; };
+        A031 /* Unrar in Frameworks */ = {isa = PBXBuildFile; productRef = Z003 /* Unrar */; };
+        A032 /* ExplorerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B030 /* ExplorerModels.swift */; };
+        A033 /* SecurityScopedFolderStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B031 /* SecurityScopedFolderStore.swift */; };
+        A034 /* ExplorerFolderPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B032 /* ExplorerFolderPicker.swift */; };
+        A035 /* ExplorerFileEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B033 /* ExplorerFileEngine.swift */; };
+        A036 /* ExplorerArchiveManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B034 /* ExplorerArchiveManager.swift */; };
+        A037 /* ExplorerPaneState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B035 /* ExplorerPaneState.swift */; };
+        A038 /* ExplorerPreviewAndShare.swift in Sources */ = {isa = PBXBuildFile; fileRef = B036 /* ExplorerPreviewAndShare.swift */; };
+        A039 /* ExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B037 /* ExplorerView.swift */; };
+        A040 /* ExplorerFavoritesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B038 /* ExplorerFavoritesStore.swift */; };
+        A041 /* ExplorerOperationQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = B039 /* ExplorerOperationQueue.swift */; };
+        A042 /* ExplorerTrashManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B040 /* ExplorerTrashManager.swift */; };
+        A043 /* ExplorerDragDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = B041 /* ExplorerDragDrop.swift */; };
+        A901 /* NikaidoBiometricUnlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = B901 /* NikaidoBiometricUnlock.swift */; };
+        A902 /* NikaidoTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B902 /* NikaidoTheme.swift */; };
+        A903 /* NikaidoExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = B903 /* NikaidoExtras.swift */; };
+        A904 /* ExplorerGlobalFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = B904 /* ExplorerGlobalFiles.swift */; };
+        A905 /* ExplorerDragMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = B905 /* ExplorerDragMove.swift */; };
+        A906 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B906 /* HomeView.swift */; };
+        A044 /* ExplorerSMB.swift in Sources */ = {isa = PBXBuildFile; fileRef = B042 /* ExplorerSMB.swift */; };
+        A045 /* AMSMB2 in Frameworks */ = {isa = PBXBuildFile; productRef = Z004 /* AMSMB2 */; };
+        A046 /* AMSMB2 in Embed Frameworks */ = {isa = PBXBuildFile; productRef = Z004 /* AMSMB2 */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+        B001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoExplorerApp.swift; sourceTree = "<group>"; };
+        B002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+        B003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderPicker.swift; sourceTree = "<group>"; };
+        B004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultItem.swift; sourceTree = "<group>"; };
+        B005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecCollectionCrypto.swift; sourceTree = "<group>"; };
+        B006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultSession.swift; sourceTree = "<group>"; };
+        B007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultThumbnail.swift; sourceTree = "<group>"; };
+        B008 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaViewer.swift; sourceTree = "<group>"; };
+        B009 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+        B010 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateVaultCrypto.swift; sourceTree = "<group>"; };
+        B011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateVaultModel.swift; sourceTree = "<group>"; };
+        B012 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateVaultSession.swift; sourceTree = "<group>"; };
+        B013 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateVaultView.swift; sourceTree = "<group>"; };
+        B014 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipFilePicker.swift; sourceTree = "<group>"; };
+        B015 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecZipImporter.swift; sourceTree = "<group>"; };
+        B016 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyShield.swift; sourceTree = "<group>"; };
+        B018 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredSecZipViewer.swift; sourceTree = "<group>"; };
+        B019 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LANVaultReceiver.swift; sourceTree = "<group>"; };
+        B020 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LANReceiveView.swift; sourceTree = "<group>"; };
+        B021 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredSecCollectionViewer.swift; sourceTree = "<group>"; };
+        B022 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDownsampler.swift; sourceTree = "<group>"; };
+        B023 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LANTransferActivity.swift; sourceTree = "<group>"; };
+        B024 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredSecVideoPlayer.swift; sourceTree = "<group>"; };
+        B025 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoTransferJournal.swift; sourceTree = "<group>"; };
+        B026 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoVaultHealth.swift; sourceTree = "<group>"; };
+        B027 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoVaultMigration.swift; sourceTree = "<group>"; };
+        B028 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecDirectVideoPlayer.swift; sourceTree = "<group>"; };
+        B029 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateVaultVideoPlayer.swift; sourceTree = "<group>"; };
+        B030 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerModels.swift; sourceTree = "<group>"; };
+        B031 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedFolderStore.swift; sourceTree = "<group>"; };
+        B032 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerFolderPicker.swift; sourceTree = "<group>"; };
+        B033 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerFileEngine.swift; sourceTree = "<group>"; };
+        B034 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerArchiveManager.swift; sourceTree = "<group>"; };
+        B035 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerPaneState.swift; sourceTree = "<group>"; };
+        B036 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerPreviewAndShare.swift; sourceTree = "<group>"; };
+        B037 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerView.swift; sourceTree = "<group>"; };
+        B038 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerFavoritesStore.swift; sourceTree = "<group>"; };
+        B039 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerOperationQueue.swift; sourceTree = "<group>"; };
+        B040 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerTrashManager.swift; sourceTree = "<group>"; };
+        B041 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerDragDrop.swift; sourceTree = "<group>"; };
+        B901 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoBiometricUnlock.swift; sourceTree = "<group>"; };
+        B902 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoTheme.swift; sourceTree = "<group>"; };
+        B903 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoExtras.swift; sourceTree = "<group>"; };
+        B904 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerGlobalFiles.swift; sourceTree = "<group>"; };
+        B905 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerDragMove.swift; sourceTree = "<group>"; };
+        B906 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+        B042 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerSMB.swift; sourceTree = "<group>"; };
+        B100 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SolidSecViewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+        C001 = {
+            isa = PBXFrameworksBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                A015 /* ZIPFoundation in Frameworks */,
+                A030 /* SWCompression in Frameworks */,
+                A031 /* Unrar in Frameworks */,
+                A045 /* AMSMB2 in Frameworks */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+        C004 /* Embed Frameworks */ = {
+            isa = PBXCopyFilesBuildPhase;
+            buildActionMask = 2147483647;
+            dstPath = "";
+            dstSubfolderSpec = 10;
+            files = (
+                A046 /* AMSMB2 in Embed Frameworks */,
+            );
+            name = "Embed Frameworks";
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXGroup section */
+        D001 = {
+            isa = PBXGroup;
+            children = (
+                D002 /* SolidSecViewer */,
+                D003 /* Products */,
+            );
+            sourceTree = "<group>";
+        };
+        D002 = {
+            isa = PBXGroup;
+            children = (
+                B001, B002, B003, B004, B005, B006, B007, B008, B009, B010, B011, B012, B013, B014, B015, B016,  B018, B019, B020, B021, B022, B023, B024, B025, B026, B027, B028, B029, B030, B031, B032, B033, B034, B035, B036, B037, B038, B039, B040, B041, B042, B901, B902, B903, B904, B905, B906,
+            );
+            path = SolidSecViewer;
+            sourceTree = "<group>";
+        };
+        D003 = {
+            isa = PBXGroup;
+            children = (B100,);
+            name = Products;
+            sourceTree = "<group>";
+        };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+        E001 = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = F002;
+            buildPhases = (
+                C002 /* Sources */,
+                C001 /* Frameworks */,
+                C003 /* Resources */,
+                C004 /* Embed Frameworks */,
+            );
+            buildRules = ();
+            dependencies = ();
+            name = SolidSecViewer;
+            packageProductDependencies = (
+                Z001 /* ZIPFoundation */,
+                Z002 /* SWCompression */,
+                Z003 /* Unrar */,
+                Z004 /* AMSMB2 */,
+            );
+            productName = SolidSecViewer;
+            productReference = B100;
+            productType = "com.apple.product-type.application";
+        };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+        P001 = {
+            isa = PBXProject;
+            attributes = {
+                BuildIndependentTargetsInParallel = 1;
+                LastSwiftUpdateCheck = 1600;
+                LastUpgradeCheck = 1600;
+                TargetAttributes = { E001 = { CreatedOnToolsVersion = 16.0; }; };
+            };
+            buildConfigurationList = F001;
+            compatibilityVersion = "Xcode 14.0";
+            developmentRegion = en;
+            hasScannedForEncodings = 0;
+            knownRegions = (en, Base);
+            mainGroup = D001;
+            productRefGroup = D003;
+            projectDirPath = "";
+            projectRoot = "";
+            packageReferences = (
+                Y001 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+                Y002 /* XCRemoteSwiftPackageReference "SWCompression" */,
+                Y003 /* XCRemoteSwiftPackageReference "Unrar" */,
+                Y004 /* XCRemoteSwiftPackageReference "AMSMB2" */,
+            );
+            targets = (E001,);
+        };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+        C003 = {
+            isa = PBXResourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = ();
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+        C002 = {
+            isa = PBXSourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (A001,A002,A003,A004,A005,A006,A007,A008,A009,A010,A011,A012,A013,A014,A016,A018,A019,A020,A021,A022,A023,A024,A025,A026,A027,A028,A029,A032,A033,A034,A035,A036,A037,A038,A039,A040,A041,A042,A043,A044,A901,A902,A903,A904,A905,A906,);
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXSourcesBuildPhase section */
+
+
+/* Begin XCRemoteSwiftPackageReference section */
+        Y001 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/weichsel/ZIPFoundation.git";
+            requirement = {
+                kind = exactVersion;
+                version = 0.9.20;
+            };
+        };
+        Y002 /* XCRemoteSwiftPackageReference "SWCompression" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/tsolomko/SWCompression.git";
+            requirement = {
+                kind = exactVersion;
+                version = 4.8.6;
+            };
+        };
+        Y003 /* XCRemoteSwiftPackageReference "Unrar" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/mtgto/Unrar.swift";
+            requirement = {
+                kind = exactVersion;
+                version = 0.5.4;
+            };
+        };
+        Y004 /* XCRemoteSwiftPackageReference "AMSMB2" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/amosavian/AMSMB2";
+            requirement = {
+                kind = exactVersion;
+                version = 4.0.3;
+            };
+        };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+        Z001 /* ZIPFoundation */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = Y001 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+            productName = ZIPFoundation;
+        };
+        Z002 /* SWCompression */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = Y002 /* XCRemoteSwiftPackageReference "SWCompression" */;
+            productName = SWCompression;
+        };
+        Z003 /* Unrar */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = Y003 /* XCRemoteSwiftPackageReference "Unrar" */;
+            productName = Unrar;
+        };
+        Z004 /* AMSMB2 */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = Y004 /* XCRemoteSwiftPackageReference "AMSMB2" */;
+            productName = AMSMB2;
+        };
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin XCBuildConfiguration section */
+        G001 = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
+                CLANG_ENABLE_MODULES = YES;
+                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+                SDKROOT = iphoneos;
+                SWIFT_VERSION = 5.0;
+            };
+            name = Debug;
+        };
+        G002 = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
+                CLANG_ENABLE_MODULES = YES;
+                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+                SDKROOT = iphoneos;
+                SWIFT_VERSION = 5.0;
+            };
+            name = Release;
+        };
+        G003 = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 29;
+                EXECUTABLE_NAME = SolidSecViewer;
+                GENERATE_INFOPLIST_FILE = NO;
+                INFOPLIST_FILE = SolidSecViewer/Info.plist;
+                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+                MARKETING_VERSION = 0.10.3;
+                PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SWIFT_EMIT_LOC_STRINGS = YES;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = "1";
+            };
+            name = Debug;
+        };
+        G004 = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 29;
+                EXECUTABLE_NAME = SolidSecViewer;
+                GENERATE_INFOPLIST_FILE = NO;
+                INFOPLIST_FILE = SolidSecViewer/Info.plist;
+                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+                MARKETING_VERSION = 0.10.3;
+                PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SWIFT_EMIT_LOC_STRINGS = YES;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = "1";
+            };
+            name = Release;
+        };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+        F001 = {
+            isa = XCConfigurationList;
+            buildConfigurations = (G001,G002,);
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
+        F002 = {
+            isa = XCConfigurationList;
+            buildConfigurations = (G003,G004,);
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
+/* End XCConfigurationList section */
+    };
+    rootObject = P001;
+}
