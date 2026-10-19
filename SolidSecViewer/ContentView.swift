@@ -26,6 +26,10 @@ struct ContentView: View {
     @State private var showScreenshotWarning = false
     @State private var zipOperationID = UUID()
     @State private var selectedItem: VaultItem?
+    @State private var pendingIncomingURL: URL?
+    @State private var showIncomingChooser = false
+    @State private var incomingNotice: String?
+    @State private var incomingImportBusy = false
     @State private var showHidden = false
     @State private var search = ""
 
@@ -101,6 +105,40 @@ struct ContentView: View {
         .sheet(item: $selectedItem) { item in
             MediaViewer(item: item)
                 .environmentObject(vault)
+        }
+        .onOpenURL { url in
+            // LaunchServices can open a document in a signed standalone app.
+            // A LiveContainer guest may not be registered as a system share target.
+            guard url.isFileURL else { return }
+            pendingIncomingURL = url
+            showIncomingChooser = true
+        }
+        .confirmationDialog(
+            "Importar documento a NikaView",
+            isPresented: $showIncomingChooser,
+            titleVisibility: .visible
+        ) {
+            Button("Guardar en NikaView Files") {
+                importIncomingDocument(intoVault: false)
+            }
+            if privateVault.isUnlocked {
+                Button("Guardar cifrado en la bóveda") {
+                    importIncomingDocument(intoVault: true)
+                }
+            }
+            Button("Cancelar", role: .cancel) { pendingIncomingURL = nil }
+        } message: {
+            Text(privateVault.isUnlocked
+                 ? "Elige dónde guardar una copia. Nunca se eliminará el archivo compartido."
+                 : "Para guardar directamente en la bóveda, ábrela primero. Este documento puede importarse a Archivos sin desbloquearla.")
+        }
+        .alert("Importación de archivos", isPresented: Binding(
+            get: { incomingNotice != nil },
+            set: { if !$0 { incomingNotice = nil } }
+        )) {
+            Button("Entendido", role: .cancel) { incomingNotice = nil }
+        } message: {
+            Text(incomingNotice ?? "")
         }
         .onAppear {
             if PrivacyShield.isScreenCaptureActive() {
@@ -190,6 +228,46 @@ struct ContentView: View {
                 + "Nikaido Explorer bloqueó las bóvedas inmediatamente, pero no puede "
                 + "borrar una captura que el sistema ya guardó."
             )
+        }
+    }
+
+    @MainActor
+    private func importIncomingDocument(intoVault: Bool) {
+        guard !incomingImportBusy, let source = pendingIncomingURL else { return }
+        pendingIncomingURL = nil
+        incomingImportBusy = true
+        Task { @MainActor in
+            defer { incomingImportBusy = false }
+            let scoped = source.startAccessingSecurityScopedResource()
+            defer { if scoped { source.stopAccessingSecurityScopedResource() } }
+            do {
+                if intoVault {
+                    guard privateVault.isUnlocked else {
+                        incomingNotice = "Desbloquea la bóveda y vuelve a compartir el documento."
+                        return
+                    }
+                    privateVault.errorMessage = nil
+                    await privateVault.importFiles(urls: [source], parentID: nil)
+                    guard privateVault.errorMessage == nil else {
+                        throw NSError(domain: "NikaView.Import", code: 1,
+                                      userInfo: [NSLocalizedDescriptionKey: privateVault.errorMessage ?? "No se pudo cifrar"]) 
+                    }
+                    incomingNotice = "Archivo importado y cifrado en la bóveda."
+                } else {
+                    guard let location = locations.localLocation else {
+                        incomingNotice = "No hay almacenamiento local disponible."
+                        return
+                    }
+                    try await ExplorerFileEngine.importFile(
+                        from: source,
+                        into: location.rootURL,
+                        root: location.rootURL
+                    )
+                    incomingNotice = "Documento copiado a NikaView Files."
+                }
+            } catch {
+                incomingNotice = "No se pudo importar: \(error.localizedDescription)"
+            }
         }
     }
 

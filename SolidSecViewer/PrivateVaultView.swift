@@ -791,6 +791,7 @@ struct PrivateVaultView: View {
                     )
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel(currentFolderID == nil ? "Cerrar bóveda" : "Volver a la carpeta anterior")
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(vault.folderName(currentFolderID))
@@ -799,6 +800,8 @@ struct PrivateVaultView: View {
 
                     Text("\(visibleChildren.count) elementos")
                         .font(.caption)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                         .foregroundStyle(.secondary)
                 }
 
@@ -810,6 +813,7 @@ struct PrivateVaultView: View {
                     Image(systemName: "folder.badge.plus")
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel("Crear carpeta cifrada")
 
                 Button {
                     showLANReceiver = true
@@ -842,6 +846,8 @@ struct PrivateVaultView: View {
                 }
                 .disabled(photoImport.isImporting)
                 .buttonStyle(.borderedProminent)
+                .accessibilityLabel("Importar a la bóveda")
+                .accessibilityHint("Elige entre archivos, fotos y videos del carrete")
 
                 Menu {
                     Button {
@@ -1738,7 +1744,7 @@ struct PrivateVaultMediaViewer: View {
                 if let image {
                     ZoomableImage(image: image)
                 } else if let playback {
-                    VideoPlayer(player: playback.player)
+                    NikaidoSecureVideoView(player: playback.player, videoID: entry.id)
                         .ignoresSafeArea()
                 } else if let errorText {
                     VStack(spacing: 12) {
@@ -1776,6 +1782,9 @@ struct PrivateVaultMediaViewer: View {
 
             Button {
                 viewerIsActive = false
+                if let playback {
+                    NikaidoVideoResumeStore.capture(playback.player, id: entry.id)
+                }
                 vault.stopVideoPlayback(playback)
                 playback = nil
                 dismiss()

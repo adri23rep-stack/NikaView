@@ -45,6 +45,25 @@
 	<string>NikaView necesita permiso para eliminar fotos originales solo después de importarlas y cifrarlas correctamente y cuando tú lo confirmes.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Nikaido Vault usa Face ID, solo si tú lo eliges, para desbloquear la bóveda sin escribir la contraseña.</string>
+	<!-- Enables Open In / document handoff in signed standalone installations.
+         This is not an iOS Share Extension and does not register guest apps. -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Archivos de NikaView</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.data</string>
+				<string>public.image</string>
+				<string>public.movie</string>
+			</array>
+		</dict>
+	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

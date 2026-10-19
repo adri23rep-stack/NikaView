@@ -20,7 +20,7 @@ struct MediaViewer: View {
                 if let image {
                     ZoomableImage(image: image)
                 } else if let playback {
-                    VideoPlayer(player: playback.player)
+                    NikaidoSecureVideoView(player: playback.player, videoID: NikaidoVideoResumeStore.stableID(for: item.encryptedURL))
                         .ignoresSafeArea()
                 } else if let errorText {
                     Text(errorText)
@@ -38,6 +38,9 @@ struct MediaViewer: View {
             }
 
             Button {
+                if let playback {
+                    NikaidoVideoResumeStore.capture(playback.player, id: NikaidoVideoResumeStore.stableID(for: item.encryptedURL))
+                }
                 vault.stopVideoPlayback(playback)
                 playback = nil
                 dismiss()

@@ -1989,9 +1989,9 @@ struct ExplorerPaneView: View {
     @ViewBuilder
     private var fileContent: some View {
         if pane.viewMode == .grid {
-            fileGrid
+            fileGrid.background(ExplorerDragEdgeScroll(state: dragState))
         } else {
-            fileList
+            fileList.background(ExplorerDragEdgeScroll(state: dragState))
         }
     }
 
@@ -2036,6 +2036,13 @@ struct ExplorerPaneView: View {
                 )
                 .contentShape(Rectangle())
                 .onTapGesture {
+                    activate(item)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(item.name)
+                .accessibilityValue(item.isDirectory ? "Carpeta" : item.formattedSize)
+                .accessibilityHint(pane.selectionMode ? "Doble toque para seleccionar" : "Doble toque para abrir")
+                .accessibilityAction(named: "Abrir o seleccionar") {
                     activate(item)
                 }
                 .contextMenu {
@@ -2157,6 +2164,12 @@ struct ExplorerPaneView: View {
                         )
                         .contentShape(Rectangle())
                         .onTapGesture {
+                            activate(item)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(item.name)
+                        .accessibilityValue(item.isDirectory ? "Carpeta" : item.formattedSize)
+                        .accessibilityAction(named: "Abrir o seleccionar") {
                             activate(item)
                         }
                         .contextMenu {

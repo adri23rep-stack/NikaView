@@ -408,7 +408,7 @@ struct HomeView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("NikaView Files")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.headline)
 
                     Text("Las carpetas de NikaView")
                         .font(.footnote)
@@ -539,8 +539,8 @@ struct HomeView: View {
                                 )
 
                             Text(category.title)
-                                .font(.system(size: 14, weight: .semibold))
-                                .lineLimit(1)
+                                .font(.subheadline.weight(.semibold))
+                                .lineLimit(2)
                                 .minimumScaleFactor(0.8)
                         }
                         .frame(maxWidth: .infinity)

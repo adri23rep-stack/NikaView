@@ -1347,7 +1347,7 @@ struct StoredSecCollectionMediaViewer: View {
                 if let image {
                     ZoomableImage(image: image)
                 } else if let playback {
-                    VideoPlayer(player: playback.player)
+                    NikaidoSecureVideoView(player: playback.player, videoID: item.id)
                         .ignoresSafeArea()
                 } else if let errorText {
                     VStack(spacing: 12) {
@@ -1388,6 +1388,9 @@ struct StoredSecCollectionMediaViewer: View {
 
             Button {
                 viewerIsActive = false
+                if let playback {
+                    NikaidoVideoResumeStore.capture(playback.player, id: item.id)
+                }
                 session.stopVideoPlayback(playback)
                 playback = nil
                 dismiss()

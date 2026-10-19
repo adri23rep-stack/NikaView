@@ -555,3 +555,122 @@ struct ExplorerExternalLocationCell: View {
         )
     }
 }
+
+
+// MARK: - Auto-scroll on drag near either panel edge
+
+/// A UIKit probe paired with both SwiftUI List and ScrollView. LiveContainer's
+/// custom handle gesture does not trigger UIKit's built-in drag autoscroll.
+struct ExplorerDragEdgeScroll: UIViewRepresentable {
+    @ObservedObject var state: ExplorerDragState
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        context.coordinator.host = view
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.host = uiView
+        context.coordinator.state = state
+        context.coordinator.setActive(state.isDragging)
+    }
+
+    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+        coordinator.setActive(false)
+        coordinator.host = nil
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        weak var host: UIView?
+        weak var state: ExplorerDragState?
+        private var displayLink: CADisplayLink?
+
+        func setActive(_ active: Bool) {
+            if active, displayLink == nil {
+                let link = CADisplayLink(target: self, selector: #selector(tick))
+                link.preferredFramesPerSecond = 30
+                link.add(to: .main, forMode: .common)
+                displayLink = link
+            } else if !active {
+                displayLink?.invalidate()
+                displayLink = nil
+            }
+        }
+
+        @objc private func tick() {
+            guard let host, let window = host.window, let state,
+                  state.isDragging else {
+                setActive(false)
+                return
+            }
+
+            // Compare in the same window coordinates as DragGesture(.global).
+            let finger = state.pointer.location
+            let panelRect = host.convert(host.bounds, to: window)
+            guard panelRect.contains(finger) else { return }
+
+            let edge: CGFloat = 65
+            let distanceTop = finger.y - panelRect.minY
+            let distanceBottom = panelRect.maxY - finger.y
+            let step: CGFloat
+            if distanceTop < edge {
+                step = -max(3, (edge - distanceTop) * 0.30)
+            } else if distanceBottom < edge {
+                step = max(3, (edge - distanceBottom) * 0.30)
+            } else {
+                return
+            }
+
+            guard let scroll = nearestScrollView(to: host, panelRect: panelRect,
+                                                in: window) else { return }
+            let insets = scroll.adjustedContentInset
+            let minimum = -insets.top
+            let maximum = max(minimum, scroll.contentSize.height
+                              - scroll.bounds.height + insets.bottom)
+            let next = min(maximum, max(minimum, scroll.contentOffset.y + step))
+            if abs(next - scroll.contentOffset.y) > 0.1 {
+                scroll.setContentOffset(CGPoint(x: scroll.contentOffset.x, y: next), animated: false)
+                // Folder hit-testing changes as the rows move underneath the finger.
+                state.move(to: finger)
+            }
+        }
+
+        private func nearestScrollView(to host: UIView, panelRect: CGRect,
+                                       in window: UIWindow) -> UIScrollView? {
+            // SwiftUI List and ScrollView are siblings of this background view.
+            var parent: UIView? = host.superview
+            while let view = parent {
+                let matches = scrollViews(in: view).filter { scroll in
+                    let frame = scroll.convert(scroll.bounds, to: window)
+                    return frame.intersects(panelRect)
+                        && frame.width >= panelRect.width * 0.75
+                        && frame.height >= panelRect.height * 0.65
+                        && scroll.contentSize.height > scroll.bounds.height + 1
+                }
+                if let closest = matches.min(by: { lhs, rhs in
+                    abs(lhs.bounds.height - panelRect.height)
+                    < abs(rhs.bounds.height - panelRect.height)
+                }) {
+                    return closest
+                }
+                parent = view.superview
+            }
+            return nil
+        }
+
+        private func scrollViews(in view: UIView) -> [UIScrollView] {
+            var result: [UIScrollView] = []
+            if let scroll = view as? UIScrollView { result.append(scroll) }
+            for child in view.subviews {
+                result.append(contentsOf: scrollViews(in: child))
+            }
+            return result
+        }
+    }
+}
