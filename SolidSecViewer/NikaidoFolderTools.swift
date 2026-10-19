@@ -182,8 +182,8 @@ struct NikaidoSpaceMap: View {
                 let values = try? child.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey, .isSymbolicLinkKey])
                 guard values?.isSymbolicLink != true else { continue }
                 if values?.isRegularFile == true { bytes = Int64(values?.fileSize ?? 0); scanned += 1 }
-                else if let walker = FileManager.default.enumerator(at: child, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]) {
-                    for file in walker {
+                else {
+                    for file in NikaidoFileEnumerator.list(child, limit: 5000 - scanned) {
                         guard scanned < 5000 else { break }
                         let value = try? file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
                         guard value?.isRegularFile == true && value?.isSymbolicLink != true else { continue }
