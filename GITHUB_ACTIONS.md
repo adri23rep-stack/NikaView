@@ -2,7 +2,7 @@
 
 NikaView se compila en un runner de **macOS 15** con **Xcode 16.4**. No hace falta tener una Mac para ejecutar el flujo desde GitHub.
 
-> **Versión técnica actual:** 0.11.0 (build 31). El ZIP original llevaba el nombre v0.12.0, pero no hay evidencia de que esa versión se haya actualizado en el proyecto Xcode.
+> **Versión técnica actual:** 0.11.2 (build 33). El ZIP original llevaba el nombre v0.12.0, pero no hay evidencia de que esa versión se haya actualizado en el proyecto Xcode.
 >
 > El resultado es un **IPA sin firmar, destinado a pruebas con LiveContainer**. No es un IPA firmado para instalación normal ni una publicación de App Store.
 
@@ -11,8 +11,8 @@ NikaView se compila en un runner de **macOS 15** con **Xcode 16.4**. No hace fal
 1. Abre [Actions — NikaView](https://github.com/adri23rep-stack/NikaView/actions).
 2. Selecciona **Build Nikaido Explorer IPA**.
 3. Haz clic en **Run workflow** y elige la rama `main`.
-4. Al finalizar, entra en la ejecución y descarga el artefacto **NikaidoExplorer-LiveContainer-v0.11.0**.
-5. Descomprime el artefacto; incluye `NikaidoExplorer-LiveContainer-v0.11.0.ipa`.
+4. Al finalizar, entra en la ejecución y descarga el artefacto **NikaidoExplorer-LiveContainer-v0.11.2**.
+5. Descomprime el artefacto; incluye `NikaidoExplorer-LiveContainer-v0.11.2.ipa`.
 
 El flujo también se ejecuta automáticamente al subir cambios a `main` que afecten al código, proyecto de Xcode, scripts de pruebas, herramientas de PC o al propio workflow.
 
