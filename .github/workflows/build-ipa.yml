@@ -14,7 +14,7 @@ on:
       - ".github/workflows/build-ipa.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -187,22 +187,63 @@ jobs:
           test "${{ steps.validate.outcome }}" = "success"
           test "${{ steps.warningguard.outcome }}" = "success"
 
+      - name: Read validated app version
+        id: version
+        run: |
+          set -euo pipefail
+          plist="build/ios/Products/SolidSecViewer.app/Info.plist"
+          version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")"
+          build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$build" =~ ^[0-9]+$ ]]
+          test -f "RELEASE_NOTES_v${version}.md"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "Release candidate v$version (build $build)"
+
       - name: Package and validate IPA
         run: bash scripts/ci/package_ipa.sh
 
       - name: Upload IPA
         uses: actions/upload-artifact@v6
         with:
-          name: NikaidoExplorer-LiveContainer-v0.10.3
-          path: build/package/NikaidoExplorer-LiveContainer-v0.10.3.ipa
+          name: NikaidoExplorer-LiveContainer-v${{ steps.version.outputs.version }}
+          path: build/package/NikaidoExplorer-LiveContainer-v${{ steps.version.outputs.version }}.ipa
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish verified IPA to GitHub Releases
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_BUILD: ${{ steps.version.outputs.build }}
+        run: |
+          set -euo pipefail
+          tag="v${RELEASE_VERSION}"
+          ipa="build/package/NikaidoExplorer-LiveContainer-${tag}.ipa"
+          test -s "$ipa"
+
+          # Never silently replace an existing version's IPA with different code.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::error title=Release already exists::Bump MARKETING_VERSION and CURRENT_PROJECT_VERSION before releasing a different build."
+            exit 1
+          fi
+
+          gh release create "$tag" "$ipa" \
+            --target "$GITHUB_SHA" \
+            --title "NikaView ${tag} (build ${RELEASE_BUILD})" \
+            --notes-file "RELEASE_NOTES_${tag}.md" \
+            --latest
+
+          gh release view "$tag" --json url,assets
+          echo "Release published: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${tag}"
 
       - name: Upload diagnostics if anything fails
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: NikaidoExplorer-build-diagnostics-v0.10.3
+          name: NikaidoExplorer-build-diagnostics-v${{ steps.version.outputs.version || 'unknown' }}
           path: |
             build/selftest/selftest.log
             build/selftest/SecCollectionSelfTest-compile.log

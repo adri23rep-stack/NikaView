@@ -6,7 +6,26 @@ cd "$ROOT"
 
 APP_PATH="${1:-$ROOT/build/ios/Products/SolidSecViewer.app}"
 OUT="$ROOT/build/package"
-IPA_NAME="NikaidoExplorer-LiveContainer-v0.10.3.ipa"
+
+# Derive the IPA filename from the actual, compiled app version.
+# Never publish a file named for one version that contains another.
+PLIST="$APP_PATH/Info.plist"
+[ -f "$PLIST" ] || {
+  echo "PACKAGE ERROR: app Info.plist missing: $PLIST"
+  exit 1
+}
+VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")"
+BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")"
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+  echo "PACKAGE ERROR: invalid app version: $VERSION"
+  exit 1
+}
+[[ "$BUILD" =~ ^[0-9]+$ ]] || {
+  echo "PACKAGE ERROR: invalid app build: $BUILD"
+  exit 1
+}
+IPA_NAME="NikaidoExplorer-LiveContainer-v${VERSION}.ipa"
+echo "Packaging version $VERSION (build $BUILD)"
 
 rm -rf "$OUT"
 mkdir -p "$OUT/Payload"

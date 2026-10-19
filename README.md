@@ -4,9 +4,9 @@
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
 >
-> **Versión declarada en el código:** `0.10.3` (build `29`). El ZIP de origen se llamaba `NikA-vIEW-v0.12.0.zip`, pero ese nombre **no coincide** con la versión configurada en Xcode. No se afirma que exista una compilación v0.12.0 validada.
+> **Versión actual del proyecto:** `0.10.5` (build `30`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
 
-NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrollando. La aplicación todavía muestra el nombre **Nikaido Explorer** y mantiene identificadores internos anteriores para proteger la compatibilidad de los datos existentes. Cambiar el nombre visible y actualizar la versión se hará por separado, después de las pruebas correspondientes.
+NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrollando. La aplicación todavía muestra el nombre **Nikaido Explorer** y mantiene identificadores internos anteriores para proteger la compatibilidad de los datos existentes. Cambiar el nombre visible se hará por separado, después de las pruebas correspondientes.
 
 ## ¿Qué incluye?
 
@@ -105,3 +105,7 @@ Puedes reportar errores y proponer mejoras mediante **Issues** y **Pull Requests
 ---
 
 *English summary: NikaView is an experimental iOS file manager with dual-pane browsing, an encrypted vault, archive support, SMB and local PC transfers. The app still uses the legacy “Nikaido Explorer” display name and identifiers. iOS builds are unsigned, and device compatibility is not guaranteed.*
+
+## Descargar el IPA
+
+La versión actual se publica en [GitHub Releases](https://github.com/adri23rep-stack/NikaView/releases). El IPA para LiveContainer se genera con GitHub Actions y se publica **solo si pasa las pruebas y validaciones**. Es un IPA **sin firmar**, no una app instalable desde App Store.
