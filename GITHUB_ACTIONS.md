@@ -1,54 +1,37 @@
-# Nikaido Explorer v0.8.1 — GitHub Actions
+# Compilar NikaView con GitHub Actions
 
-El workflow `.github/workflows/build-ipa.yml` usa macOS + Xcode 16.4 porque la
-compilación real de UIKit/AVFoundation/Network.framework requiere el SDK de iPhone.
+NikaView se compila en un runner de **macOS 15** con **Xcode 16.4**. No hace falta tener una Mac para ejecutar el flujo desde GitHub.
 
-## Uso
+> **Versión técnica actual:** 0.10.3 (build 29). El ZIP original llevaba el nombre v0.12.0, pero no hay evidencia de que esa versión se haya actualizado en el proyecto Xcode.
+>
+> El resultado es un **IPA sin firmar, destinado a pruebas con LiveContainer**. No es un IPA firmado para instalación normal ni una publicación de App Store.
 
-1. Descomprime esta build.
-2. Ejecuta `ACTUALIZAR_GITHUB.bat` desde la raíz.
-3. El BAT reutiliza el mismo repo permanente y hace push.
-4. Abre **Actions -> Build Nikaido Explorer IPA**.
-5. Espera que termine el job completo.
-6. Descarga `NikaidoExplorer-LiveContainer-v0.8.1`.
-7. Dentro estará `NikaidoExplorer-LiveContainer-v0.8.1.ipa`.
+## Cómo compilar
 
-## Puertas del workflow
+1. Abre [Actions — NikaView](https://github.com/adri23rep-stack/NikaView/actions).
+2. Selecciona **Build Nikaido Explorer IPA**.
+3. Haz clic en **Run workflow** y elige la rama `main`.
+4. Al finalizar, entra en la ejecución y descarga el artefacto **NikaidoExplorer-LiveContainer-v0.10.3**.
+5. Descomprime el artefacto; incluye `NikaidoExplorer-LiveContainer-v0.10.3.ipa`.
 
-- `plutil` de Info.plist y project.pbxproj.
-- parse Swift 5 de las fuentes de la app.
-- auditoría de refs Swift del PBX y regresiones de seguridad.
-- guard de lifecycle de privacidad/Nikaido Link.
-- guard de video cifrado in-place.
-- guard de branding/compatibilidad/resume v0.8.
-- self-test de formato `.sec` PBKDF2/AES-CTR + random offsets.
-- self-test de Nikaido Vault AES-GCM/chunks/hash/random access/journal.
-- self-test de compatibilidad de índice viejo + política de versión futura.
-- resolución explícita de ZIPFoundation.
-- self-test de Nikaido Bridge en venv limpio, incluido resume + ACK loopback.
-- build arm64 iphoneos sin firma.
-- guard que rechaza warnings provenientes de nuestros `.swift`.
-- validación bundle/Mach-O/arm64/dependencias.
-- empaquetado y test de la estructura IPA.
+El flujo también se ejecuta automáticamente al subir cambios a `main` que afecten al código, proyecto de Xcode, scripts de pruebas, herramientas de PC o al propio workflow.
 
-La IPA no se publica si falla cualquiera de estas puertas.
+## Comprobaciones que ejecuta
 
-## Diagnósticos
+- Preparación y revisión del SDK de iPhone, plist, proyecto Xcode y sintaxis Swift.
+- Auditoría del proyecto y pruebas de protección de datos.
+- Autopruebas de cifrado, formatos `.sec` y compatibilidad del índice.
+- Resolución de las dependencias Swift Package Manager.
+- Pruebas del cliente de transferencia por red para PC.
+- Compilación iPhoneOS Release arm64 con firma desactivada.
+- Revisión de advertencias del código, bundle y dependencias dinámicas (AMSMB2).
+- Creación y validación del IPA.
 
-En fallo se intenta publicar:
+Si alguna prueba falla, **el IPA no se publica como artefacto exitoso**. En su lugar, consulta el artefacto de diagnóstico `NikaidoExplorer-build-diagnostics-v0.10.3`, el resumen de pasos y los logs de `xcodebuild`.
 
-`NikaidoExplorer-build-diagnostics-v0.8.1`
+## Seguridad y límites
 
-Incluye logs de self-tests, resolución SPM, PC test, xcodebuild, xcresult,
-validación de bundle/Mach-O y resumen de status/warnings.
-
-## Compatibilidad de datos
-
-El branding visible cambió, pero el target técnico y Bundle ID heredados se mantienen
-para proteger la continuidad del data container existente. No cambies manualmente el
-Bundle ID antes de probar la bóveda ya almacenada.
-
-## Privacidad del repo
-
-Usa preferiblemente un repo privado. Sube código/fixtures sintéticos, nunca la bóveda
-real, `.sec` privados, ZIPs, IPA, certificados, contraseñas o material personal.
+- El proyecto se publica como código fuente; nunca incluyas bóvedas reales, archivos `.sec` privados, certificados, perfiles de firma ni credenciales.
+- El IPA generado no tiene firma; GitHub Actions no instala aplicaciones en tu iPhone.
+- La ejecución verde indica que pasó la compilación y las pruebas automatizadas; **no sustituye** probarlo en un iPhone real.
+- No cambies el identificador heredado de la app sin planificar primero la migración de datos.
