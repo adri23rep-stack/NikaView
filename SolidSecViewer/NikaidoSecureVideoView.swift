@@ -72,14 +72,17 @@ enum NikaidoVideoResumeStore {
 struct NikaidoSecureVideoView: View {
     let player: AVPlayer
     let videoID: UUID
+    var allowsPictureInPicture = false
 
     @State private var rate: Float = 1
     @State private var resumedAt: Double?
 
     var body: some View {
         VStack(spacing: 0) {
-            VideoPlayer(player: player)
-                .accessibilityLabel("Reproductor de video cifrado")
+            NikaidoAVPlayerView(player: player, allowPiP: allowsPictureInPicture)
+                .accessibilityLabel(allowsPictureInPicture
+                                    ? "Video con Picture in Picture"
+                                    : "Reproductor de video cifrado")
 
             HStack(spacing: 12) {
                 if let resumedAt {
@@ -130,5 +133,27 @@ struct NikaidoSecureVideoView: View {
         .onDisappear {
             NikaidoVideoResumeStore.capture(player, id: videoID)
         }
+    }
+}
+
+
+/// The system PiP button is enabled only for ordinary, unencrypted Explorer
+/// files. Vault video still ends immediately when the vault is locked.
+struct NikaidoAVPlayerView: UIViewControllerRepresentable {
+    let player: AVPlayer
+    let allowPiP: Bool
+
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.player = player
+        controller.allowsPictureInPicturePlayback = allowPiP
+        controller.canStartPictureInPictureAutomaticallyFromInline = allowPiP
+        controller.showsPlaybackControls = true
+        return controller
+    }
+
+    func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+        if controller.player !== player { controller.player = player }
+        controller.allowsPictureInPicturePlayback = allowPiP
     }
 }

@@ -88,6 +88,7 @@ struct ExplorerView: View {
     @State private var renameText = ""
     @State private var pendingAction: ExplorerPendingAction?
     @State private var previewTarget: ExplorerPreviewTarget?
+    @State private var regularVideoTarget: NikaidoRegularVideoTarget?
     @State private var shareURLs: [URL] = []
     @State private var showShareSheet = false
     @State private var archivePassword = ""
@@ -280,6 +281,9 @@ struct ExplorerView: View {
 
     private var vaultPresentedExplorer: some View {
         basicPresentedExplorer
+        .sheet(item: $regularVideoTarget) { target in
+            NikaidoRegularVideoPlayer(url: target.url)
+        }
         .sheet(item: $editorTarget) { target in
             ExplorerTextEditorView(
                 url: target.url,
@@ -1103,6 +1107,8 @@ struct ExplorerView: View {
 
                 if ExplorerTextEditorView.canEdit(item) {
                     openEditor(item, paneIndex: index)
+                } else if NikaidoRegularVideoPlayer.supports(item) {
+                    regularVideoTarget = NikaidoRegularVideoTarget(url: item.url)
                 } else {
                     previewTarget = ExplorerPreviewTarget(url: item.url)
                 }

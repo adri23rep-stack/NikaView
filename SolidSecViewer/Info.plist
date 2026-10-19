@@ -37,6 +37,9 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Nikaido Link y SMB usan la red local únicamente cuando eliges transferir archivos o conectarte a un servidor de tu red.</string>
+	<!-- Video played through the file explorer can continue in system PiP. -->
+	<key>UIBackgroundModes</key>
+	<array><string>audio</string></array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

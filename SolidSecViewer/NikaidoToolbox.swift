@@ -99,6 +99,7 @@ struct NikaidoFileInspector: View {
     @State private var hexDump = ""
     @State private var databaseTables: [String] = []
     @State private var chosenTable: String?
+    @State private var page = 0
     @State private var rows: [String] = []
     @State private var error: String?
 
@@ -113,6 +114,14 @@ struct NikaidoFileInspector: View {
                         Text("Elegir tabla").tag(String?.none)
                         ForEach(databaseTables, id: \.self) { Text($0).tag(Optional($0)) }
                     }
+                    HStack {
+                        Button("Anterior") { page = max(0, page - 1) }.disabled(page == 0)
+                        Spacer()
+                        Text("Página \(page + 1)").font(.caption)
+                        Spacer()
+                        Button("Siguiente") { page = min(199, page + 1) }
+                            .disabled(rows.count < 50 || page >= 199)
+                    }
                     ForEach(rows, id: \.self) { Text($0).font(.caption.monospaced()).textSelection(.enabled) }
                 }
             }
@@ -122,10 +131,16 @@ struct NikaidoFileInspector: View {
             if let error { Text(error).foregroundStyle(.red) }
         }
         .task { await load() }
-        .task(id: chosenTable) {
-            if let table = chosenTable {
-                rows = Self.readTable(at: url, name: table)
-            }
+        .task(id: chosenTable) { page = 0 }
+        .task(id: "\(chosenTable ?? "")|\(page)") {
+            guard let table = chosenTable else { rows = []; return }
+            let file = url
+            let offset = page
+            let selected = await Task.detached(priority: .userInitiated) {
+                Self.readTable(at: file, name: table, page: offset)
+            }.value
+            guard !Task.isCancelled else { return }
+            rows = selected
         }
     }
 
@@ -158,6 +173,9 @@ struct NikaidoFileInspector: View {
             } else if ["sqlite", "sqlite3", "db"].contains(ext) {
                 summary += "SQLite · estructura y primeras 50 filas por tabla · solo lectura."
             } else { summary += "Vista genérica sin ejecutar contenido." }
+            if let binary = NikaidoBinaryInspector.report(url: url, mappedData: data) {
+                summary += "\n\n" + String(binary.prefix(16000))
+            }
             return (summary, hex, Self.listTables(at: url))
         }.value
         report = result.0
@@ -183,7 +201,7 @@ struct NikaidoFileInspector: View {
         return tables
     }
 
-    nonisolated private static func readTable(at url: URL, name: String) -> [String] {
+    nonisolated private static func readTable(at url: URL, name: String, page: Int) -> [String] {
         var db: OpaquePointer?
         guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil) == SQLITE_OK else {
             if db != nil { sqlite3_close(db) }
@@ -192,7 +210,8 @@ struct NikaidoFileInspector: View {
         defer { sqlite3_close(db) }
         let escaped = name.replacingOccurrences(of: "\"", with: "\"\"")
         var stmt: OpaquePointer?
-        guard sqlite3_prepare_v2(db, "SELECT * FROM \"\(escaped)\" LIMIT 50", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        let offset = max(0, min(page, 199)) * 50
+        guard sqlite3_prepare_v2(db, "SELECT * FROM \"\(escaped)\" LIMIT 50 OFFSET \(offset)", -1, &stmt, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(stmt) }
         var rows: [String] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
