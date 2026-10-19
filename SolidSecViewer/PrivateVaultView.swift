@@ -43,6 +43,9 @@ struct PrivateVaultView: View {
     @State private var confirmPassword = ""
     @State private var currentFolderID: UUID?
     @State private var showImporter = false
+    @State private var showPhotoPicker = false
+    @State private var offerDeletePhotos = false
+    @StateObject private var photoImport = NikaidoPhotoImportCoordinator()
     @State private var showLANReceiver = false
     @State private var showNewFolder = false
     @State private var newFolderName = ""
@@ -105,6 +108,33 @@ struct PrivateVaultView: View {
                     )
                 }
             }
+        }
+        .sheet(isPresented: $showPhotoPicker) {
+            NikaidoPhotoPicker { picked, warning in
+                photoImport.importPicked(
+                    picked, vault: vault, parentID: currentFolderID,
+                    requestDelete: offerDeletePhotos, pickerError: warning
+                )
+            }
+        }
+        .confirmationDialog(
+            "¿Eliminar originales del carrete?",
+            isPresented: $photoImport.deleteConfirmation
+        ) {
+            Button("Eliminar originales de Fotos", role: .destructive) {
+                photoImport.deleteVerifiedOriginals()
+            }
+            Button("Conservar originales", role: .cancel) {}
+        } message: {
+            Text("La copia cifrada ya está en la bóveda. iOS pedirá confirmar el borrado de Fotos; los originales se pueden recuperar desde Eliminado recientemente.")
+        }
+        .alert("Importación del carrete", isPresented: Binding(
+            get: { photoImport.notice != nil },
+            set: { if !$0 { photoImport.notice = nil } }
+        )) {
+            Button("Entendido") { photoImport.notice = nil }
+        } message: {
+            Text(photoImport.notice ?? "")
         }
         .sheet(isPresented: $showLANReceiver) {
             LANReceiveView(
@@ -718,11 +748,11 @@ struct PrivateVaultView: View {
                 }
             }
 
-            if vault.isBusy || isPreparingExport {
+            if vault.isBusy || isPreparingExport || photoImport.isImporting {
                 ProgressView(
                     isPreparingExport
                     ? "Preparando exportación cifrada…"
-                    : "Cifrando…"
+                    : "Cifrando o importando…"
                 )
                 .padding()
             }
@@ -789,11 +819,28 @@ struct PrivateVaultView: View {
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel("Recibir desde PC")
 
-                Button {
-                    showImporter = true
+                Menu {
+                    Button {
+                        offerDeletePhotos = false
+                        showPhotoPicker = true
+                    } label: {
+                        Label("Importar fotos y videos", systemImage: "photo.on.rectangle")
+                    }
+                    Button {
+                        offerDeletePhotos = true
+                        showPhotoPicker = true
+                    } label: {
+                        Label("Importar y ofrecer borrar originales", systemImage: "photo.badge.plus")
+                    }
+                    Button {
+                        showImporter = true
+                    } label: {
+                        Label("Importar desde Archivos", systemImage: "folder")
+                    }
                 } label: {
                     Image(systemName: "square.and.arrow.down")
                 }
+                .disabled(photoImport.isImporting)
                 .buttonStyle(.borderedProminent)
 
                 Menu {
@@ -901,7 +948,6 @@ struct PrivateVaultView: View {
         Button {
             if entry.isSecCollectionFolder {
                 // The .sec viewer prompts for its own password or Face ID.
-                // Do not ask for an extra vault-level Face ID here.
                 selectedSecFolder = entry
             } else if entry.kind == .folder {
                 vaultSearch = ""

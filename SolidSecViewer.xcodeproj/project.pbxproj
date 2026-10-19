@@ -54,6 +54,10 @@
         A904 /* ExplorerGlobalFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = B904 /* ExplorerGlobalFiles.swift */; };
         A905 /* ExplorerDragMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = B905 /* ExplorerDragMove.swift */; };
         A906 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B906 /* HomeView.swift */; };
+        A907 /* VaultPhotoImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B907 /* VaultPhotoImport.swift */; };
+        A908 /* NikaidoToolbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = B908 /* NikaidoToolbox.swift */; };
+        A909 /* NikaidoFolderTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = B909 /* NikaidoFolderTools.swift */; };
+        A910 /* NikaidoRecents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B910 /* NikaidoRecents.swift */; };
         A044 /* ExplorerSMB.swift in Sources */ = {isa = PBXBuildFile; fileRef = B042 /* ExplorerSMB.swift */; };
         A045 /* AMSMB2 in Frameworks */ = {isa = PBXBuildFile; productRef = Z004 /* AMSMB2 */; };
         A046 /* AMSMB2 in Embed Frameworks */ = {isa = PBXBuildFile; productRef = Z004 /* AMSMB2 */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -106,6 +110,10 @@
         B904 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerGlobalFiles.swift; sourceTree = "<group>"; };
         B905 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerDragMove.swift; sourceTree = "<group>"; };
         B906 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+        B907 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultPhotoImport.swift; sourceTree = "<group>"; };
+        B908 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoToolbox.swift; sourceTree = "<group>"; };
+        B909 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoFolderTools.swift; sourceTree = "<group>"; };
+        B910 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoRecents.swift; sourceTree = "<group>"; };
         B042 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerSMB.swift; sourceTree = "<group>"; };
         B100 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SolidSecViewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -150,7 +158,7 @@
         D002 = {
             isa = PBXGroup;
             children = (
-                B001, B002, B003, B004, B005, B006, B007, B008, B009, B010, B011, B012, B013, B014, B015, B016,  B018, B019, B020, B021, B022, B023, B024, B025, B026, B027, B028, B029, B030, B031, B032, B033, B034, B035, B036, B037, B038, B039, B040, B041, B042, B901, B902, B903, B904, B905, B906,
+                B001, B002, B003, B004, B005, B006, B007, B008, B009, B010, B011, B012, B013, B014, B015, B016,  B018, B019, B020, B021, B022, B023, B024, B025, B026, B027, B028, B029, B030, B031, B032, B033, B034, B035, B036, B037, B038, B039, B040, B041, B042, B901, B902, B903, B904, B905, B906, B907, B908, B909, B910,
             );
             path = SolidSecViewer;
             sourceTree = "<group>";
@@ -229,7 +237,7 @@
         C002 = {
             isa = PBXSourcesBuildPhase;
             buildActionMask = 2147483647;
-            files = (A001,A002,A003,A004,A005,A006,A007,A008,A009,A010,A011,A012,A013,A014,A016,A018,A019,A020,A021,A022,A023,A024,A025,A026,A027,A028,A029,A032,A033,A034,A035,A036,A037,A038,A039,A040,A041,A042,A043,A044,A901,A902,A903,A904,A905,A906,);
+            files = (A001,A002,A003,A004,A005,A006,A007,A008,A009,A010,A011,A012,A013,A014,A016,A018,A019,A020,A021,A022,A023,A024,A025,A026,A027,A028,A029,A032,A033,A034,A035,A036,A037,A038,A039,A040,A041,A042,A043,A044,A901,A902,A903,A904,A905,A906,A907,A908,A909,A910,);
             runOnlyForDeploymentPostprocessing = 0;
         };
 /* End PBXSourcesBuildPhase section */
@@ -302,6 +310,7 @@
                 IPHONEOS_DEPLOYMENT_TARGET = 16.0;
                 SDKROOT = iphoneos;
                 SWIFT_VERSION = 5.0;
+                OTHER_LDFLAGS = ("$(inherited)", "-lsqlite3");
             };
             name = Debug;
         };
@@ -313,6 +322,7 @@
                 IPHONEOS_DEPLOYMENT_TARGET = 16.0;
                 SDKROOT = iphoneos;
                 SWIFT_VERSION = 5.0;
+                OTHER_LDFLAGS = ("$(inherited)", "-lsqlite3");
             };
             name = Release;
         };
@@ -320,16 +330,17 @@
             isa = XCBuildConfiguration;
             buildSettings = {
                 CODE_SIGN_STYLE = Automatic;
-                CURRENT_PROJECT_VERSION = 30;
+                CURRENT_PROJECT_VERSION = 31;
                 EXECUTABLE_NAME = SolidSecViewer;
                 GENERATE_INFOPLIST_FILE = NO;
                 INFOPLIST_FILE = SolidSecViewer/Info.plist;
                 IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-                MARKETING_VERSION = 0.10.5;
+                MARKETING_VERSION = 0.11.0;
                 PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = YES;
                 SWIFT_VERSION = 5.0;
+                OTHER_LDFLAGS = ("$(inherited)", "-lsqlite3");
                 TARGETED_DEVICE_FAMILY = "1";
             };
             name = Debug;
@@ -338,16 +349,17 @@
             isa = XCBuildConfiguration;
             buildSettings = {
                 CODE_SIGN_STYLE = Automatic;
-                CURRENT_PROJECT_VERSION = 30;
+                CURRENT_PROJECT_VERSION = 31;
                 EXECUTABLE_NAME = SolidSecViewer;
                 GENERATE_INFOPLIST_FILE = NO;
                 INFOPLIST_FILE = SolidSecViewer/Info.plist;
                 IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-                MARKETING_VERSION = 0.10.5;
+                MARKETING_VERSION = 0.11.0;
                 PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = YES;
                 SWIFT_VERSION = 5.0;
+                OTHER_LDFLAGS = ("$(inherited)", "-lsqlite3");
                 TARGETED_DEVICE_FAMILY = "1";
             };
             name = Release;

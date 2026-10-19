@@ -463,6 +463,7 @@ struct ExplorerTextEditorView: View {
 
         Task {
             do {
+                try NikaidoTextHistory.snapshot(url)
                 try await ExplorerFileEngine.writeText(
                     content,
                     to: url,

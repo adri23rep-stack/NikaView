@@ -141,6 +141,7 @@ final class ExplorerPaneState: ObservableObject, Identifiable {
 
             self.location = location
             currentURL = folderURL.standardizedFileURL
+            NikaidoRecents.record(locationID: location.id, folder: folderURL)
             selectedIDs.removeAll()
             selectionMode = false
 
@@ -163,6 +164,7 @@ final class ExplorerPaneState: ObservableObject, Identifiable {
             )
             recordNavigation(from: currentURL)
             currentURL = item.url
+            NikaidoRecents.record(locationID: location.id, folder: item.url)
             selectedIDs.removeAll()
 
             Task {

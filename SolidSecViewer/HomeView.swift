@@ -10,6 +10,7 @@ struct ExplorerLaunchRequest: Identifiable, Equatable {
         case folder(UUID, URL)
         case global(ExplorerGlobalFilter)
         case settings
+        case smb
     }
 
     let id = UUID()
@@ -184,6 +185,8 @@ struct HomeView: View {
     @State private var logoOffset: CGFloat = 0
     @State private var tourSource: HomeTourSource?
     @State private var showAllFolders = false
+    @StateObject private var savedFavorites = ExplorerFavoritesStore()
+    @State private var recentFolders: [NikaidoRecentFolder] = []
 
     var body: some View {
         ZStack {
@@ -194,6 +197,7 @@ struct HomeView: View {
                     header
                     storageSection
                     vaultBar
+                    quickAccessSection
                     categoriesSection
                 }
                 .padding(.horizontal, 20)
@@ -212,7 +216,53 @@ struct HomeView: View {
             }
         }
         .task {
+            recentFolders = NikaidoRecents.all
             await playLogoHop()
+        }
+    }
+
+    private var quickAccessSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("ACCESO RÁPIDO")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    onOpenExplorer(.smb)
+                } label: {
+                    Label("SMB", systemImage: "network")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .accessibilityLabel("Conectar a servidor SMB")
+            }
+            let favorites = savedFavorites.favorites.compactMap { favorite in
+                savedFavorites.resolve(favorite, locations: locations.locations)
+            }
+            ForEach(Array(favorites.prefix(4).enumerated()), id: \.offset) { _, pair in
+                Button {
+                    onOpenExplorer(.folder(pair.0.id, pair.1))
+                } label: {
+                    Label(pair.1.lastPathComponent, systemImage: "star.fill")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.bordered)
+            }
+            ForEach(recentFolders.prefix(4)) { item in
+                if let location = locations.locations.first(where: { $0.id == item.locationID }) {
+                    let url = URL(fileURLWithPath: item.path)
+                    if url.path == location.rootURL.standardizedFileURL.path ||
+                       url.path.hasPrefix(location.rootURL.standardizedFileURL.path + "/") {
+                        Button {
+                            onOpenExplorer(.folder(location.id, url))
+                        } label: {
+                            Label(item.label, systemImage: "clock.arrow.circlepath")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+            }
         }
     }
 

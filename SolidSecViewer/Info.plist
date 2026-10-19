@@ -41,6 +41,8 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>NikaView necesita permiso para eliminar fotos originales solo después de importarlas y cifrarlas correctamente y cuando tú lo confirmes.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Nikaido Vault usa Face ID, solo si tú lo eliges, para desbloquear la bóveda sin escribir la contraseña.</string>
 	<key>UTExportedTypeDeclarations</key>

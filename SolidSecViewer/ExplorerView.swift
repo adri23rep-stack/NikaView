@@ -76,6 +76,8 @@ struct ExplorerView: View {
     @State private var showFolderPicker = false
     @State private var showStorageLocations = false
     @State private var showSettings = false
+    @State private var showToolbox = false
+    @State private var pendingDrop: ExplorerDropRequest?
     @State private var showOperations = false
     @State private var showTrash = false
     @State private var showSMB = false
@@ -242,6 +244,30 @@ struct ExplorerView: View {
                     showFolderPicker = true
                 }
             }
+        }
+        .confirmationDialog(
+            "¿Qué deseas hacer al soltar?",
+            isPresented: Binding(
+                get: { pendingDrop != nil },
+                set: { if !$0 { pendingDrop = nil } }
+            )
+        ) {
+            Button("Mover") { executeDrop(moving: true) }
+            Button("Copiar") { executeDrop(moving: false) }
+            Button("Cancelar", role: .cancel) { pendingDrop = nil }
+        }
+        .sheet(isPresented: $showToolbox) {
+            NikaidoToolboxView(
+                left: active.currentURL,
+                right: splitOpen ? other.currentURL : nil,
+                selected: active.selectedItems.map(\.url),
+                onChanged: {
+                    Task {
+                        await leftPane.refresh()
+                        await rightPane.refresh()
+                    }
+                }
+            )
         }
         .sheet(isPresented: $showSettings) {
             ExplorerSettingsView(
@@ -556,6 +582,8 @@ struct ExplorerView: View {
             showGlobalFiles = true
         case .settings:
             showSettings = true
+        case .smb:
+            showSMB = true
         }
     }
 
@@ -638,6 +666,11 @@ struct ExplorerView: View {
             .accessibilityLabel(splitOpen ? "Cerrar segundo panel" : "Abrir segundo panel")
 
             Menu {
+                Button {
+                    showToolbox = true
+                } label: {
+                    Label("Herramientas avanzadas", systemImage: "wrench.and.screwdriver")
+                }
                 Button {
                     globalInitialFilter = .all
                     showGlobalFiles = true
@@ -1537,13 +1570,19 @@ struct ExplorerView: View {
 
     /// Soltar con el asa de arrastre: sobre una carpeta o sobre el otro panel.
     private func performDrop(_ request: ExplorerDropRequest) {
+        pendingDrop = request
+    }
+
+    private func executeDrop(moving: Bool) {
+        guard let request = pendingDrop else { return }
+        pendingDrop = nil
         switch request.target {
         case .folder(let folder, let paneIndex):
             moveItems(
                 request.items,
                 fromPane: request.sourcePane,
                 intoFolder: folder.url,
-                destinationPane: paneIndex
+                destinationPane: paneIndex, moving: moving
             )
         case .pane(let paneIndex):
             guard
@@ -1557,14 +1596,14 @@ struct ExplorerView: View {
                 request.items,
                 fromPane: request.sourcePane,
                 intoFolder: destination,
-                destinationPane: paneIndex
+                destinationPane: paneIndex, moving: moving
             )
         case .location(let location):
             moveItems(
                 request.items,
                 fromPane: request.sourcePane,
                 intoFolder: location.rootURL,
-                destinationRoot: location.rootURL
+                destinationRoot: location.rootURL, moving: moving
             )
         }
     }
@@ -1574,7 +1613,8 @@ struct ExplorerView: View {
         _ items: [ExplorerFileItem],
         fromPane sourceIndex: Int,
         intoFolder destinationDirectory: URL,
-        destinationPane destinationIndex: Int
+        destinationPane destinationIndex: Int,
+        moving: Bool = true
     ) {
         guard let destinationRoot = pane(at: destinationIndex).location?.rootURL else {
             globalError = "Abre una ubicación en ambos paneles primero."
@@ -1585,7 +1625,8 @@ struct ExplorerView: View {
             items,
             fromPane: sourceIndex,
             intoFolder: destinationDirectory,
-            destinationRoot: destinationRoot
+            destinationRoot: destinationRoot,
+            moving: moving
         )
     }
 
@@ -1594,7 +1635,8 @@ struct ExplorerView: View {
         _ items: [ExplorerFileItem],
         fromPane sourceIndex: Int,
         intoFolder destinationDirectory: URL,
-        destinationRoot: URL
+        destinationRoot: URL,
+        moving: Bool = true
     ) {
         let sourcePane = pane(at: sourceIndex)
 
@@ -1631,21 +1673,25 @@ struct ExplorerView: View {
 
         let folderName = destinationDirectory.lastPathComponent
         let title = movable.count == 1
-            ? "Mover \(movable[0].name) a \(folderName)"
-            : "Mover \(movable.count) elementos a \(folderName)"
+            ? "\(moving ? "Mover" : "Copiar") \(movable[0].name) a \(folderName)"
+            : "\(moving ? "Mover" : "Copiar") \(movable.count) elementos a \(folderName)"
 
         operationQueue.enqueue(
             title: title,
-            kind: .move,
+            kind: moving ? .move : .copy,
             totalUnits: movable.count
         ) {
-            try await ExplorerFileEngine.move(
-                movable,
-                sourceRoot: sourceRoot,
-                to: destinationDirectory,
-                destinationRoot: destinationRoot,
-                conflictPolicy: conflictPolicy
-            )
+            if moving {
+                try await ExplorerFileEngine.move(
+                    movable, sourceRoot: sourceRoot, to: destinationDirectory,
+                    destinationRoot: destinationRoot, conflictPolicy: conflictPolicy
+                )
+            } else {
+                try await ExplorerFileEngine.copy(
+                    movable, sourceRoot: sourceRoot, to: destinationDirectory,
+                    destinationRoot: destinationRoot, conflictPolicy: conflictPolicy
+                )
+            }
             await leftPane.refresh()
             await rightPane.refresh()
         }
