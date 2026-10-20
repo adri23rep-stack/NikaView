@@ -149,6 +149,13 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(
+            for: UIScene.willDeactivateNotification
+        )) { _ in
+            // Scene-level deactivation may precede the app-level notification
+            // when iOS starts preparing the switcher snapshot.
+            PrivacyShield.show()
+        }
+        .onReceive(NotificationCenter.default.publisher(
             for: UIApplication.willResignActiveNotification
         )) { _ in
             // Cover immediately so app-switcher snapshots / transient system UI
@@ -156,6 +163,14 @@ struct ContentView: View {
             // permission prompts (notably Local Network on first LAN use) can make
             // the app temporarily inactive without actually backgrounding it.
             PrivacyShield.show()
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIApplication.protectedDataWillBecomeUnavailableNotification
+        )) { _ in
+            // The phone is locking. Do not keep plaintext, video decoders or
+            // network receive keys alive when protected storage becomes unavailable.
+            PrivacyShield.show()
+            lockForPrivacy()
         }
         .onReceive(NotificationCenter.default.publisher(
             for: UIApplication.didEnterBackgroundNotification
@@ -208,14 +223,12 @@ struct ContentView: View {
             PrivacyShield.show(message: "Captura detectada")
             lockForPrivacy()
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                guard
-                    UIApplication.shared.applicationState == .active,
-                    !PrivacyShield.isScreenCaptureActive()
-                else {
-                    return
-                }
-
+            // Screenshot notifications arrive AFTER iOS has already saved the
+            // image. We cannot stop that screenshot with a public API.
+            // Never wait an arbitrary 600 ms before updating the locked UI.
+            DispatchQueue.main.async {
+                guard UIApplication.shared.applicationState == .active,
+                      !PrivacyShield.isScreenCaptureActive() else { return }
                 PrivacyShield.hide()
                 showScreenshotWarning = true
             }

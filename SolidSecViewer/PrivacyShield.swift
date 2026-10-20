@@ -23,6 +23,10 @@ enum PrivacyShield {
                 view.translatesAutoresizingMaskIntoConstraints = false
                 view.backgroundColor = .black
                 view.isUserInteractionEnabled = true
+                // Keep the private view inaccessible to VoiceOver while covered.
+                view.accessibilityViewIsModal = true
+                view.accessibilityLabel = "Contenido oculto por privacidad"
+                view.accessibilityTraits = [.updatesFrequently]
 
                 let stack = UIStackView()
                 stack.axis = .vertical
