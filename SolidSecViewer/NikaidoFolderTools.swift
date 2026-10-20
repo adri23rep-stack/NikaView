@@ -22,6 +22,7 @@ struct NikaidoCompareFolders: View {
     @State private var alert: String?
     @State private var confirm = false
     @State private var directionLeft = true
+    @State private var showTwoWaySync = false
 
     var body: some View {
         Form {
@@ -31,6 +32,9 @@ struct NikaidoCompareFolders: View {
                     Text("Derecha → izquierda").tag(false)
                 }
                 Button("Analizar carpetas") { inspect() }.disabled(busy)
+                Button("Sincronizar en ambos sentidos…") {
+                    showTwoWaySync = true
+                }.disabled(busy)
                 if busy { ProgressView("Revisando…") }
                 Text("Compara archivos por ruta, tamaño y fecha. La sincronización solo copia archivos faltantes o más nuevos; no borra el destino.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -60,6 +64,16 @@ struct NikaidoCompareFolders: View {
             Text("Los destinos modificados se respaldarán primero. Nunca se eliminarán archivos por estar ausentes en el origen.")
         }
         .task(id: directionLeft) { differences = [] }
+        .sheet(isPresented: $showTwoWaySync) {
+            NavigationStack {
+                NikaidoBidirectionalSync(left: left, right: right, onChanged: onChanged)
+                    .navigationTitle("Sincronizar ambos paneles")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        Button("Cerrar") { showTwoWaySync = false }
+                    }
+            }
+        }
     }
 
     private func inspect() {
