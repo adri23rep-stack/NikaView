@@ -4,9 +4,16 @@
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
 >
-> **Versión actual del proyecto:** `0.11.2` (build `33`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
+> **Versión actual del proyecto:** `0.11.4` (build `35`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
 
 NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrollando. La aplicación todavía muestra el nombre **Nikaido Explorer** y mantiene identificadores internos anteriores para proteger la compatibilidad de los datos existentes. Cambiar el nombre visible se hará por separado, después de las pruebas correspondientes.
+
+## Novedades recientes — v0.11.3 y v0.11.4
+
+- **Sincronización bidireccional:** compara los dos paneles, propone archivos ausentes y deja conflictos sin tocar hasta elegir manualmente qué copiar. Crea respaldos antes de reemplazos y nunca elimina originales.
+- **Compartir videos sin metadatos:** admite MP4/MOV/M4V y genera una nueva copia MOV. Filtra los metadatos identificables, revisa fecha/GPS/ubicación/autor conocidos tras exportar y rechaza la copia cuando la comprobación detecta información sensible. No borra ni modifica el original.
+- **Validación:** el código pasó todas las pruebas de GitHub Actions y se publicó en [Releases v0.11.4](https://github.com/adri23rep-stack/NikaView/releases/tag/v0.11.4). Las funciones nuevas aún necesitan pruebas en un iPhone real.
+- **Límites:** máximo 1,500 entradas por panel en esta sincronización. La exportación de video puede volver a codificar y usa almacenamiento temporal. No garantiza identificar cualquier formato propietario de metadatos.
 
 ## Novedades recientes — v0.11.1 y v0.11.2
 
