@@ -765,6 +765,12 @@ struct PrivateVaultView: View {
                     .padding(.bottom, 6)
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            browserActions
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+        }
         .searchable(
             text: $vaultSearch,
             placement: .navigationBarDrawer(displayMode: .always),
@@ -791,150 +797,6 @@ struct PrivateVaultView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)
 
-            HStack(spacing: 2) {
-                Button {
-                    vaultSearch = ""
-                    if currentFolderID == nil {
-                        vault.lock()
-                        onHome()
-                    } else {
-                        currentFolderID = vault.parent(of: currentFolderID)
-                    }
-                } label: {
-                    Image(systemName: currentFolderID == nil ? "house" : "chevron.left")
-                }
-                .buttonStyle(NikaidoGlassActionStyle())
-                .accessibilityLabel(currentFolderID == nil ? "Cerrar bóveda" : "Volver a la carpeta anterior")
-
-                Button {
-                    showNewFolder = true
-                } label: {
-                    Image(systemName: "folder.badge.plus")
-                }
-                .buttonStyle(NikaidoGlassActionStyle())
-                .accessibilityLabel("Crear carpeta cifrada")
-
-                Button {
-                    showLANReceiver = true
-                } label: {
-                    Image(systemName: "wifi")
-                }
-                .buttonStyle(NikaidoGlassActionStyle())
-                .accessibilityLabel("Recibir desde PC")
-
-                Menu {
-                    Button {
-                        offerDeletePhotos = false
-                        showPhotoPicker = true
-                    } label: {
-                        Label("Importar fotos y videos", systemImage: "photo.on.rectangle")
-                    }
-                    Button {
-                        offerDeletePhotos = true
-                        showPhotoPicker = true
-                    } label: {
-                        Label("Importar y ofrecer borrar originales", systemImage: "photo.badge.plus")
-                    }
-                    Button {
-                        showImporter = true
-                    } label: {
-                        Label("Importar desde Archivos", systemImage: "folder")
-                    }
-                } label: {
-                    Image(systemName: "square.and.arrow.down")
-                }
-                .disabled(photoImport.isImporting)
-                .buttonStyle(NikaidoGlassActionStyle())
-                .accessibilityLabel("Importar a la bóveda")
-                .accessibilityHint("Elige entre archivos, fotos y videos del carrete")
-
-                Menu {
-                    Button {
-                        vault.refreshOperationalStatus()
-                        showDiagnostics = true
-                    } label: {
-                        Label(
-                            "Diagnóstico de Nikaido Vault",
-                            systemImage: "stethoscope"
-                        )
-                    }
-
-                    Toggle(
-                        isOn: Binding(
-                            get: { requireFileAuth },
-                            set: { newValue in
-                                if newValue {
-                                    requireFileAuth = true
-                                } else {
-                                    protectedOpen("Desactivar la protección de archivos") {
-                                        requireFileAuth = false
-                                    }
-                                }
-                            }
-                        )
-                    ) {
-                        Label(
-                            "Pedir identidad al abrir archivos",
-                            systemImage: "lock.shield"
-                        )
-                    }
-
-                    if requireFileAuth {
-                        Button {
-                            toggleThumbnailReveal()
-                        } label: {
-                            Label(
-                                thumbnailsRevealed
-                                ? "Ocultar miniaturas"
-                                : "Mostrar miniaturas",
-                                systemImage: thumbnailsRevealed
-                                ? "eye.slash"
-                                : "eye"
-                            )
-                        }
-                    }
-
-                    Button {
-                        NikaidoUnlockPreference.disableBiometric()
-                        NikaidoUnlockPreference.faceIDOfferDeclined = false
-                        unlockMethod = nil
-                        methodNotice = "La próxima vez que desbloquees con tu contraseña te voy a preguntar otra vez: Face ID o contraseña."
-                    } label: {
-                        Label(
-                            "Cambiar método de desbloqueo",
-                            systemImage: "faceid"
-                        )
-                    }
-
-                    if vault.pendingTransferCount > 0 {
-                        Button(role: .destructive) {
-                            showDiscardPendingConfirmation = true
-                        } label: {
-                            Label(
-                                "Eliminar transferencias pendientes",
-                                systemImage: "clock.badge.xmark"
-                            )
-                        }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
-                .buttonStyle(NikaidoGlassActionStyle())
-                .accessibilityLabel("Opciones de la bóveda")
-
-                Button {
-                    vault.lock()
-                    currentFolderID = nil
-                } label: {
-                    Image(systemName: "lock.fill")
-                }
-                .buttonStyle(NikaidoGlassActionStyle())
-                .accessibilityLabel("Bloquear bóveda")
-            }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 5)
-            .modifier(NikaidoGlassCapsule())
-            .accessibilityElement(children: .contain)
 
             if vault.pendingTransferCount > 0 {
                 Text("\(vault.pendingTransferCount) transferencia(s) de Nikaido Link pueden reanudarse.")
@@ -946,6 +808,154 @@ struct PrivateVaultView: View {
         .padding(.horizontal, 14)
         .padding(.top, 8)
         .padding(.bottom, 10)
+    }
+
+    // Floating Liquid Glass actions stay reachable at the bottom of the vault.
+    private var browserActions: some View {
+        HStack(spacing: 2) {
+            Button {
+                vaultSearch = ""
+                if currentFolderID == nil {
+                    vault.lock()
+                    onHome()
+                } else {
+                    currentFolderID = vault.parent(of: currentFolderID)
+                }
+            } label: {
+                Image(systemName: currentFolderID == nil ? "house" : "chevron.left")
+            }
+            .buttonStyle(NikaidoGlassActionStyle())
+            .accessibilityLabel(currentFolderID == nil ? "Cerrar bóveda" : "Volver a la carpeta anterior")
+
+            Button {
+                showNewFolder = true
+            } label: {
+                Image(systemName: "folder.badge.plus")
+            }
+            .buttonStyle(NikaidoGlassActionStyle())
+            .accessibilityLabel("Crear carpeta cifrada")
+
+            Button {
+                showLANReceiver = true
+            } label: {
+                Image(systemName: "wifi")
+            }
+            .buttonStyle(NikaidoGlassActionStyle())
+            .accessibilityLabel("Recibir desde PC")
+
+            Menu {
+                Button {
+                    offerDeletePhotos = false
+                    showPhotoPicker = true
+                } label: {
+                    Label("Importar fotos y videos", systemImage: "photo.on.rectangle")
+                }
+                Button {
+                    offerDeletePhotos = true
+                    showPhotoPicker = true
+                } label: {
+                    Label("Importar y ofrecer borrar originales", systemImage: "photo.badge.plus")
+                }
+                Button {
+                    showImporter = true
+                } label: {
+                    Label("Importar desde Archivos", systemImage: "folder")
+                }
+            } label: {
+                Image(systemName: "square.and.arrow.down")
+            }
+            .disabled(photoImport.isImporting)
+            .buttonStyle(NikaidoGlassActionStyle())
+            .accessibilityLabel("Importar a la bóveda")
+            .accessibilityHint("Elige entre archivos, fotos y videos del carrete")
+
+            Menu {
+                Button {
+                    vault.refreshOperationalStatus()
+                    showDiagnostics = true
+                } label: {
+                    Label(
+                        "Diagnóstico de Nikaido Vault",
+                        systemImage: "stethoscope"
+                    )
+                }
+
+                Toggle(
+                    isOn: Binding(
+                        get: { requireFileAuth },
+                        set: { newValue in
+                            if newValue {
+                                requireFileAuth = true
+                            } else {
+                                protectedOpen("Desactivar la protección de archivos") {
+                                    requireFileAuth = false
+                                }
+                            }
+                        }
+                    )
+                ) {
+                    Label(
+                        "Pedir identidad al abrir archivos",
+                        systemImage: "lock.shield"
+                    )
+                }
+
+                if requireFileAuth {
+                    Button {
+                        toggleThumbnailReveal()
+                    } label: {
+                        Label(
+                            thumbnailsRevealed
+                            ? "Ocultar miniaturas"
+                            : "Mostrar miniaturas",
+                            systemImage: thumbnailsRevealed
+                            ? "eye.slash"
+                            : "eye"
+                        )
+                    }
+                }
+
+                Button {
+                    NikaidoUnlockPreference.disableBiometric()
+                    NikaidoUnlockPreference.faceIDOfferDeclined = false
+                    unlockMethod = nil
+                    methodNotice = "La próxima vez que desbloquees con tu contraseña te voy a preguntar otra vez: Face ID o contraseña."
+                } label: {
+                    Label(
+                        "Cambiar método de desbloqueo",
+                        systemImage: "faceid"
+                    )
+                }
+
+                if vault.pendingTransferCount > 0 {
+                    Button(role: .destructive) {
+                        showDiscardPendingConfirmation = true
+                    } label: {
+                        Label(
+                            "Eliminar transferencias pendientes",
+                            systemImage: "clock.badge.xmark"
+                        )
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .buttonStyle(NikaidoGlassActionStyle())
+            .accessibilityLabel("Opciones de la bóveda")
+
+            Button {
+                vault.lock()
+                currentFolderID = nil
+            } label: {
+                Image(systemName: "lock.fill")
+            }
+            .buttonStyle(NikaidoGlassActionStyle())
+            .accessibilityLabel("Bloquear bóveda")
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 5)
+        .modifier(NikaidoGlassCapsule())
+        .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder
