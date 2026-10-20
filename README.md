@@ -4,13 +4,14 @@
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
 
-## NikaView v0.12.1 — Detalles minimalistas del inicio
+## NikaView v0.12.2 — Liquid Glass inferior y bóveda renovada
 
 - Globo «¡Hazme click!» junto a la N animada para descubrir Ajustes; desaparece después de unos segundos o al tocarla, y recuerda cuando ya la usaste.
 - Tarjeta Nikaido Vault rediseñada: contorno limpio, color sobrio y pequeñas burbujas dentro del botón, sin protuberancias.
 - Fondo con tres círculos difuminados en movimiento lento tipo lámpara de lava.
 - Respeta accesibilidad de movimiento/transparencia reducidos y modo de bajo consumo.
 - Las seis acciones Liquid Glass de la bóveda ahora flotan abajo, separadas del título de la carpeta, con compatibilidad para iOS anteriores.
+- El diseño mantiene la misma lógica de cifrado; esta actualización mejora la presentación, no modifica claves ni formatos de archivos.
 
 ## NikaView v0.12.0 — Seguridad + Liquid Glass
 
