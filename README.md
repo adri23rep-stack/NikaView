@@ -4,9 +4,20 @@
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
 >
-> **Versión actual del proyecto:** `0.11.4` (build `35`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
+> **Versión actual del proyecto:** `0.12.0` (build `37`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
 
 NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrollando. La aplicación todavía muestra el nombre **Nikaido Explorer** y mantiene identificadores internos anteriores para proteger la compatibilidad de los datos existentes. Cambiar el nombre visible se hará por separado, después de las pruebas correspondientes.
+
+## NikaView v0.12.0 — Seguridad + Liquid Glass
+
+- **Bóveda:** protección adicional al desactivarse la escena, al bloquearse el teléfono y al empezar una grabación detectada; los recursos cifrados se invalidan al bloquear.
+- **Capturas:** iOS notifica cuando ya se tomó la captura; NikaView bloquea después del aviso, **no puede impedir ni borrar la primera captura**.
+- **Liquid Glass nativo en iOS 26+:** seis acciones de la bóveda en una sola fila con barra translúcida; el nombre de la carpeta se ve por separado y no queda comprimido entre botones.
+- **Explorador:** barra principal y botón flotante de crear con efecto de vidrio.
+- **iOS 16–25:** conserva las mismas funciones mediante un material translúcido compatible. La opción Reducir transparencia utiliza controles opacos.
+- **GitHub Actions:** compilación verificada con Xcode 26.6, iOS SDK 26, sin errores ni advertencias del código.
+
+**Descargar:** [v0.12.0 (IPA para LiveContainer)](https://github.com/adri23rep-stack/NikaView/releases/tag/v0.12.0). El cambio visual todavía necesita pruebas en iPhone real.
 
 ## Novedades recientes — v0.11.3 y v0.11.4
 
