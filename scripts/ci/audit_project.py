@@ -143,7 +143,11 @@ background_start = content_view.find("UIApplication.didEnterBackgroundNotificati
 if resign_start < 0 or background_start < 0:
     print("Regression: privacy lifecycle notifications missing")
     raise SystemExit(1)
-resign_slice = content_view[resign_start:background_start]
+# Only inspect the resign-active handler; unrelated notification handlers
+# (e.g. protected-data loss) can legitimately lock before background.
+resign_slice = content_view[resign_start:background_start].split(
+    "        .onReceive(", 1
+)[0]
 if "PrivacyShield.show()" not in resign_slice or "lockForPrivacy()" in resign_slice:
     print("Regression: resign-active should curtain only; background performs lock")
     raise SystemExit(1)
