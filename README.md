@@ -4,9 +4,17 @@
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
 >
-> **Versión actual del proyecto:** `0.12.0` (build `37`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
+> **Versión actual del proyecto:** `0.12.1` (build `38`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
 
 NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrollando. La aplicación todavía muestra el nombre **Nikaido Explorer** y mantiene identificadores internos anteriores para proteger la compatibilidad de los datos existentes. Cambiar el nombre visible se hará por separado, después de las pruebas correspondientes.
+
+## NikaView v0.12.1 — Detalles minimalistas del inicio
+
+- Globo «¡Hazme click!» junto a la N animada para descubrir Ajustes; desaparece después de unos segundos o al tocarla, y recuerda cuando ya la usaste.
+- Burbujas pequeñas y dos bordes redondeados en la tarjeta Nikaido Vault, con movimiento discreto.
+- Fondo con tres círculos difuminados en movimiento lento tipo lámpara de lava.
+- Respeta accesibilidad de movimiento/transparencia reducidos y modo de bajo consumo.
+- Se mantiene el Liquid Glass nativo de iOS 26 y el estilo compatible con iOS anteriores.
 
 ## NikaView v0.12.0 — Seguridad + Liquid Glass
 

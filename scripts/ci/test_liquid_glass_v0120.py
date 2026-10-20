@@ -25,7 +25,7 @@ checks = {
     "floating add action glass": ".modifier(NikaidoGlassFloatingCircle" in explorer,
     "iOS 26 capable build runner": "runs-on: macos-26" in workflow and "Xcode_26.6.app" in workflow,
     "deployment floor retained": "IPHONEOS_DEPLOYMENT_TARGET = 16.0;" in pbx,
-    "release version": len(re.findall(r"MARKETING_VERSION = 0\.12\.0;", pbx)) == 2 and len(re.findall(r"CURRENT_PROJECT_VERSION = 37;", pbx)) == 2,
+    "version not downgraded": len(re.findall(r"MARKETING_VERSION = (\\d+)\\.(\\d+)\\.(\\d+);", pbx)) == 2 and all(tuple(map(int, v)) >= (0, 12, 0) for v in re.findall(r"MARKETING_VERSION = (\\d+)\\.(\\d+)\\.(\\d+);", pbx)) and len(re.findall(r"CURRENT_PROJECT_VERSION = (\\d+);", pbx)) == 2 and all(int(v) >= 37 for v in re.findall(r"CURRENT_PROJECT_VERSION = (\\d+);", pbx)),
 }
 for key, ok in checks.items(): print(("OK " if ok else "FAIL ") + key)
 if not all(checks.values()): sys.exit(1)

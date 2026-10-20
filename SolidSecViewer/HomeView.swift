@@ -181,8 +181,12 @@ struct HomeView: View {
 
     @Environment(\.nikaidoAccent) private var nikaidoAccent
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @AppStorage("nikaido.settingsHintAlreadyTapped") private var settingsHintAlreadyTapped = false
 
     @State private var logoOffset: CGFloat = 0
+    @State private var showSettingsHint = false
+    @State private var lavaDrift = false
     @State private var tourSource: HomeTourSource?
     @State private var showAllFolders = false
     @StateObject private var savedFavorites = ExplorerFavoritesStore()
@@ -217,7 +221,20 @@ struct HomeView: View {
         }
         .task {
             recentFolders = NikaidoRecents.all
+            lavaDrift = !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
+            if !settingsHintAlreadyTapped {
+                showSettingsHint = true
+            }
             await playLogoHop()
+            try? await Task.sleep(nanoseconds: 4_500_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) {
+                showSettingsHint = false
+            }
+        }
+        .onDisappear {
+            lavaDrift = false
+            showSettingsHint = false
         }
     }
 
@@ -269,17 +286,58 @@ struct HomeView: View {
     // MARK: Fondo
 
     private var background: some View {
-        ZStack(alignment: .top) {
-            Color(uiColor: .systemBackground)
+        GeometryReader { proxy in
+            ZStack {
+                Color(uiColor: .systemBackground)
 
-            LinearGradient(
-                colors: [nikaidoAccent.opacity(0.45), nikaidoAccent.opacity(0)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 380)
+                // Soft, enormous lava-lamp orbs behind the actual interface.
+                // They never receive touches and stop moving when Home disappears.
+                if !reduceTransparency {
+                    Circle()
+                        .fill(Color.mint.opacity(0.18))
+                        .frame(width: 340, height: 340)
+                        .blur(radius: 72)
+                        .offset(
+                            x: lavaDrift ? -proxy.size.width * 0.38 : -proxy.size.width * 0.04,
+                            y: lavaDrift ? -proxy.size.height * 0.13 : proxy.size.height * 0.18
+                        )
+                        .animation(
+                            reduceMotion ? nil : .easeInOut(duration: 22).repeatForever(autoreverses: true),
+                            value: lavaDrift
+                        )
+
+                    Circle()
+                        .fill(Color.blue.opacity(0.12))
+                        .frame(width: 390, height: 390)
+                        .blur(radius: 85)
+                        .offset(
+                            x: lavaDrift ? proxy.size.width * 0.37 : proxy.size.width * 0.08,
+                            y: lavaDrift ? proxy.size.height * 0.48 : proxy.size.height * 0.20
+                        )
+                        .animation(
+                            reduceMotion ? nil : .easeInOut(duration: 28).repeatForever(autoreverses: true),
+                            value: lavaDrift
+                        )
+
+                    Circle()
+                        .fill(nikaidoAccent.opacity(0.09))
+                        .frame(width: 310, height: 310)
+                        .blur(radius: 82)
+                        .offset(
+                            x: lavaDrift ? -proxy.size.width * 0.12 : proxy.size.width * 0.32,
+                            y: lavaDrift ? proxy.size.height * 0.03 : -proxy.size.height * 0.28
+                        )
+                        .animation(
+                            reduceMotion ? nil : .easeInOut(duration: 26).repeatForever(autoreverses: true),
+                            value: lavaDrift
+                        )
+                }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     // MARK: Encabezado
@@ -287,6 +345,10 @@ struct HomeView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Button {
+                settingsHintAlreadyTapped = true
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                    showSettingsHint = false
+                }
                 onOpenExplorer(.settings)
             } label: {
                 NikaidoNMark()
@@ -300,11 +362,29 @@ struct HomeView: View {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .fill(nikaidoAccent)
                     )
-                    .shadow(color: .black.opacity(0.30), radius: 8, y: 5)
+                    .shadow(color: .black.opacity(0.20), radius: 7, y: 4)
             }
             .buttonStyle(.plain)
             .offset(y: logoOffset)
             .accessibilityLabel("Abrir ajustes")
+            .accessibilityHint("Toca la letra N para configurar NikaView")
+            .overlay(alignment: .topLeading) {
+                if showSettingsHint {
+                    Text("¡Hazme click!")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(nikaidoAccent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.regularMaterial, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.07)))
+                        .fixedSize()
+                        .offset(x: 29, y: -21)
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .zIndex(1)
 
             HStack(spacing: 0) {
                 Text("Nika")
@@ -318,7 +398,8 @@ struct HomeView: View {
 
             Spacer()
         }
-        .frame(height: 52)
+        .frame(height: 60)
+        .padding(.top, 8)
     }
 
     /// Un par de saltos al abrir la app para llamar la atención hacia la N.
@@ -328,6 +409,7 @@ struct HomeView: View {
         try? await Task.sleep(nanoseconds: 600_000_000)
 
         for height in [CGFloat(-14), CGFloat(-7)] {
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.18)) {
                 logoOffset = height
             }
@@ -471,6 +553,7 @@ struct HomeView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
+                    .padding(.trailing, 12)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 16)
@@ -485,14 +568,12 @@ struct HomeView: View {
                         )
                     )
             )
-            .shadow(color: .black.opacity(0.30), radius: 12, y: 8)
+            .shadow(color: nikaidoAccent.opacity(0.27), radius: 15, y: 7)
             .overlay(alignment: .trailing) {
-                if !reduceMotion {
-                    HomeVaultSparkles()
-                        .frame(width: 70, height: 74)
-                        .offset(x: 28)
-                        .allowsHitTesting(false)
-                }
+                HomeVaultBubbles(tint: nikaidoAccent, animated: !reduceMotion)
+                    .frame(width: 72, height: 74)
+                    .offset(x: 22)
+                    .allowsHitTesting(false)
             }
         }
         .buttonStyle(.plain)
@@ -620,53 +701,70 @@ private struct HomeStorageCard: View {
     }
 }
 
-// MARK: - Partículas de la barra de Vault
+// MARK: - Burbujas discretas en el borde de Nikaido Vault
 
-private struct HomeVaultSparkles: View {
-    private struct Particle {
+private struct HomeVaultBubbles: View {
+    let tint: Color
+    let animated: Bool
+
+    private struct Bubble {
+        let x: CGFloat
         let y: CGFloat
         let radius: CGFloat
-        let dx: CGFloat
-        let dy: CGFloat
-        let delay: Double
-        let duration: Double
+        let speed: Double
+        let phase: Double
     }
 
-    private let particles: [Particle] = [
-        Particle(y: 0.20, radius: 3.5, dx: 16, dy: -14, delay: 0.0, duration: 2.6),
-        Particle(y: 0.42, radius: 5.0, dx: 18, dy: 4, delay: 0.5, duration: 2.8),
-        Particle(y: 0.68, radius: 3.0, dx: 14, dy: 16, delay: 1.0, duration: 2.4),
-        Particle(y: 0.30, radius: 2.5, dx: 17, dy: -6, delay: 1.4, duration: 3.0),
-        Particle(y: 0.55, radius: 4.0, dx: 16, dy: 12, delay: 1.9, duration: 2.7),
-        Particle(y: 0.12, radius: 2.5, dx: 12, dy: -10, delay: 2.2, duration: 2.5)
+    // Small varying bubbles around the trailing edge, not over the text.
+    private let bubbles: [Bubble] = [
+        Bubble(x: 33, y: 9, radius: 3.0, speed: 0.7, phase: 0.0),
+        Bubble(x: 48, y: 17, radius: 4.2, speed: 0.9, phase: 1.1),
+        Bubble(x: 61, y: 29, radius: 3.2, speed: 0.6, phase: 2.2),
+        Bubble(x: 38, y: 42, radius: 5.0, speed: 0.8, phase: 0.7),
+        Bubble(x: 60, y: 53, radius: 2.5, speed: 0.9, phase: 1.8),
+        Bubble(x: 48, y: 66, radius: 3.0, speed: 0.7, phase: 2.4)
     ]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
-            Canvas { context, size in
-                let time = timeline.date.timeIntervalSinceReferenceDate
+        ZStack {
+            // Two rounded lobes merge with the original card to suggest
+            // gently melting glass rather than a second bulky button.
+            Circle()
+                .fill(tint)
+                .frame(width: 25, height: 25)
+                .overlay(Circle().strokeBorder(.white.opacity(0.36), lineWidth: 1))
+                .offset(x: -10, y: -8)
+            Circle()
+                .fill(tint.opacity(0.93))
+                .frame(width: 16, height: 16)
+                .overlay(Circle().strokeBorder(.white.opacity(0.38), lineWidth: 1))
+                .offset(x: 1, y: 17)
 
-                for particle in particles {
-                    let raw = (time + particle.delay) / particle.duration
-                    let phase = CGFloat(raw - raw.rounded(.down))
-                    let eased = 1 - (1 - phase) * (1 - phase)
-                    let x = 42 + particle.dx * eased
-                    let y = size.height * particle.y + particle.dy * eased
-                    let radius = particle.radius * (1 - 0.7 * phase)
-                    let alpha = Double(sin(phase * .pi)) * 0.95
-
-                    let rect = CGRect(
-                        x: x - radius,
-                        y: y - radius,
-                        width: radius * 2,
-                        height: radius * 2
-                    )
-
-                    context.fill(
-                        Path(ellipseIn: rect),
-                        with: .color(Color.white.opacity(alpha))
-                    )
+            if animated {
+                TimelineView(.animation(minimumInterval: 1.0 / 18.0)) { timeline in
+                    bubbleCanvas(time: timeline.date.timeIntervalSinceReferenceDate)
                 }
+            } else {
+                bubbleCanvas(time: 0)
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func bubbleCanvas(time: TimeInterval) -> some View {
+        Canvas { context, _ in
+            for bubble in bubbles {
+                let drift = CGFloat(sin(time * bubble.speed + bubble.phase)) * 4
+                let radius = bubble.radius
+                let rect = CGRect(
+                    x: bubble.x - radius,
+                    y: bubble.y + drift - radius,
+                    width: radius * 2,
+                    height: radius * 2
+                )
+                let circle = Path(ellipseIn: rect)
+                context.fill(circle, with: .color(tint.opacity(0.68)))
+                context.stroke(circle, with: .color(.white.opacity(0.72)), lineWidth: 1)
             }
         }
     }
