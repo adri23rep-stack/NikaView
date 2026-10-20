@@ -16,6 +16,8 @@ checks = {
     "opaque fallback for Reduce Transparency": "accessibilityReduceTransparency" in theme,
     "legacy iOS material fallback": "content.background(.regularMaterial, in: Capsule())" in theme,
     "vault controls horizontal": "HStack(spacing: 2)" in vault and "NikaidoGlassActionStyle()" in vault,
+    "vault glass dock is bottom anchored": ".safeAreaInset(edge: .bottom, spacing: 0)" in vault and "private var browserActions: some View" in vault,
+    "vault actions are outside the folder header": vault.index("private var browserHeader: some View") < vault.index("private var browserActions: some View"),
     "vault title isolated from buttons": ".truncationMode(.middle)" in vault and "private var browserHeader" in vault,
     "vault controls retain their actions": all(s in vault for s in (
         "showNewFolder = true", "showLANReceiver = true", "showPhotoPicker = true",
