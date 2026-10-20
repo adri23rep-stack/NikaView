@@ -11,16 +11,16 @@ NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrol
 ## NikaView v0.12.1 — Detalles minimalistas del inicio
 
 - Globo «¡Hazme click!» junto a la N animada para descubrir Ajustes; desaparece después de unos segundos o al tocarla, y recuerda cuando ya la usaste.
-- Burbujas pequeñas y dos bordes redondeados en la tarjeta Nikaido Vault, con movimiento discreto.
+- Tarjeta Nikaido Vault rediseñada: contorno limpio, color sobrio y pequeñas burbujas dentro del botón, sin protuberancias.
 - Fondo con tres círculos difuminados en movimiento lento tipo lámpara de lava.
 - Respeta accesibilidad de movimiento/transparencia reducidos y modo de bajo consumo.
-- Se mantiene el Liquid Glass nativo de iOS 26 y el estilo compatible con iOS anteriores.
+- Las seis acciones Liquid Glass de la bóveda ahora flotan abajo, separadas del título de la carpeta, con compatibilidad para iOS anteriores.
 
 ## NikaView v0.12.0 — Seguridad + Liquid Glass
 
 - **Bóveda:** protección adicional al desactivarse la escena, al bloquearse el teléfono y al empezar una grabación detectada; los recursos cifrados se invalidan al bloquear.
 - **Capturas:** iOS notifica cuando ya se tomó la captura; NikaView bloquea después del aviso, **no puede impedir ni borrar la primera captura**.
-- **Liquid Glass nativo en iOS 26+:** seis acciones de la bóveda en una sola fila con barra translúcida; el nombre de la carpeta se ve por separado y no queda comprimido entre botones.
+- **Liquid Glass nativo en iOS 26+:** seis acciones de la bóveda en una sola fila translúcida, ahora anclada en la parte inferior; el nombre de la carpeta permanece arriba.
 - **Explorador:** barra principal y botón flotante de crear con efecto de vidrio.
 - **iOS 16–25:** conserva las mismas funciones mediante un material translúcido compatible. La opción Reducir transparencia utiliza controles opacos.
 - **GitHub Actions:** compilación verificada con Xcode 26.6, iOS SDK 26, sin errores ni advertencias del código.
