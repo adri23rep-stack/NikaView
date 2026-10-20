@@ -30,7 +30,7 @@ struct NikaidoIconButtonStyle: ButtonStyle {
         configuration.label
             .font(.system(size: 17, weight: .regular))
             .foregroundStyle(prominent ? accent : Color.primary)
-            .frame(width: 36, height: 36)
+            .frame(width: 44, height: 44)
             .contentShape(Rectangle())
             .opacity(isEnabled ? (configuration.isPressed ? 0.5 : 1) : 0.3)
     }
@@ -142,5 +142,57 @@ extension View {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Color(uiColor: .secondarySystemBackground))
             )
+    }
+}
+
+ 
+/// Glass only on primary controls. iOS 16–25 uses a material fallback.
+/// Reduce Transparency uses an opaque capsule on every supported iOS version.
+struct NikaidoGlassCapsule: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if reduceTransparency {
+            content.background(Color(uiColor: .secondarySystemBackground), in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
+        } else if #available(iOS 26.0, *) {
+            content.glassEffect(.regular, in: .capsule)
+        } else {
+            content.background(.regularMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
+                .shadow(color: Color.black.opacity(0.08), radius: 12, y: 5)
+        }
+    }
+}
+
+struct NikaidoGlassActionStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 19, weight: .medium))
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+            .opacity(isEnabled ? (configuration.isPressed ? 0.55 : 1) : 0.35)
+    }
+}
+
+struct NikaidoGlassFloatingCircle: ViewModifier {
+    let tint: Color
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if reduceTransparency {
+            content.background(tint, in: Circle())
+        } else if #available(iOS 26.0, *) {
+            content.glassEffect(.regular.tint(tint).interactive(), in: .circle)
+        } else {
+            content.background(tint, in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
+                .shadow(color: Color.black.opacity(0.15), radius: 10, y: 5)
+        }
     }
 }

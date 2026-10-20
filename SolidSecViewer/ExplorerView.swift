@@ -905,9 +905,12 @@ struct ExplorerView: View {
             .buttonStyle(NikaidoIconButtonStyle())
             .accessibilityLabel("Acciones")
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 8)
+        .padding(.horizontal, 10)
         .padding(.vertical, 6)
+        .modifier(NikaidoGlassCapsule())
+        .padding(.horizontal, 12)
+        .padding(.top, 6)
+        .padding(.bottom, 4)
     }
 
     /// Abre la carpeta de origen de un resultado del filtro global.
@@ -1334,12 +1337,7 @@ struct ExplorerView: View {
                 .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: 54, height: 54)
-                .background(Circle().fill(nikaidoAccent))
-                .shadow(
-                    color: .black.opacity(0.18),
-                    radius: 8,
-                    y: 4
-                )
+                .modifier(NikaidoGlassFloatingCircle(tint: nikaidoAccent))
         }
         .disabled(!canCreate)
         .opacity(canCreate ? 1 : 0.4)

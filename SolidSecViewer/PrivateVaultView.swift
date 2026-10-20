@@ -773,8 +773,25 @@ struct PrivateVaultView: View {
     }
 
     private var browserHeader: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
+        VStack(spacing: 10) {
+            // Keep the folder title OUTSIDE the actions so it never wraps
+            // one word into several lines on a narrow iPhone.
+            VStack(alignment: .leading, spacing: 3) {
+                Text(vault.folderName(currentFolderID))
+                    .font(.title3.weight(.semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .minimumScaleFactor(0.8)
+
+                Text("\(visibleChildren.count) elementos")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+
+            HStack(spacing: 2) {
                 Button {
                     vaultSearch = ""
                     if currentFolderID == nil {
@@ -784,35 +801,17 @@ struct PrivateVaultView: View {
                         currentFolderID = vault.parent(of: currentFolderID)
                     }
                 } label: {
-                    Image(
-                        systemName: currentFolderID == nil
-                        ? "house"
-                        : "chevron.left"
-                    )
+                    Image(systemName: currentFolderID == nil ? "house" : "chevron.left")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(NikaidoGlassActionStyle())
                 .accessibilityLabel(currentFolderID == nil ? "Cerrar bóveda" : "Volver a la carpeta anterior")
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(vault.folderName(currentFolderID))
-                        .font(.headline)
-                        .lineLimit(1)
-
-                    Text("\(visibleChildren.count) elementos")
-                        .font(.caption)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
 
                 Button {
                     showNewFolder = true
                 } label: {
                     Image(systemName: "folder.badge.plus")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(NikaidoGlassActionStyle())
                 .accessibilityLabel("Crear carpeta cifrada")
 
                 Button {
@@ -820,7 +819,7 @@ struct PrivateVaultView: View {
                 } label: {
                     Image(systemName: "wifi")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(NikaidoGlassActionStyle())
                 .accessibilityLabel("Recibir desde PC")
 
                 Menu {
@@ -845,7 +844,7 @@ struct PrivateVaultView: View {
                     Image(systemName: "square.and.arrow.down")
                 }
                 .disabled(photoImport.isImporting)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(NikaidoGlassActionStyle())
                 .accessibilityLabel("Importar a la bóveda")
                 .accessibilityHint("Elige entre archivos, fotos y videos del carrete")
 
@@ -920,7 +919,8 @@ struct PrivateVaultView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(NikaidoGlassActionStyle())
+                .accessibilityLabel("Opciones de la bóveda")
 
                 Button {
                     vault.lock()
@@ -928,25 +928,24 @@ struct PrivateVaultView: View {
                 } label: {
                     Image(systemName: "lock.fill")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(NikaidoGlassActionStyle())
+                .accessibilityLabel("Bloquear bóveda")
             }
-
-            Text("Los nombres y contenidos se guardan cifrados; en disco solo quedan blobs con UUID.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 5)
+            .modifier(NikaidoGlassCapsule())
+            .accessibilityElement(children: .contain)
 
             if vault.pendingTransferCount > 0 {
-                Text(
-                    "\(vault.pendingTransferCount) transferencia(s) de "
-                    + "Nikaido Link pueden reanudarse."
-                )
-                .font(.caption2)
-                .foregroundStyle(.orange)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Text("\(vault.pendingTransferCount) transferencia(s) de Nikaido Link pueden reanudarse.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(10)
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
     }
 
     @ViewBuilder
