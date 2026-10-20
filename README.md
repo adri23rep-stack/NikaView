@@ -3,10 +3,6 @@
 **Un explorador de archivos para iPhone, con dos paneles, conexiones de red y una bóveda privada.**
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
->
-> **Versión actual del proyecto:** `0.12.1` (build `38`). El archivo ZIP original se llamaba `NikA-vIEW-v0.12.0.zip`; ese nombre no reflejaba la versión de Xcode.
-
-NikaView es el nombre de este repositorio y del proyecto que seguiremos desarrollando. La aplicación todavía muestra el nombre **Nikaido Explorer** y mantiene identificadores internos anteriores para proteger la compatibilidad de los datos existentes. Cambiar el nombre visible se hará por separado, después de las pruebas correspondientes.
 
 ## NikaView v0.12.1 — Detalles minimalistas del inicio
 
