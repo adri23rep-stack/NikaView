@@ -1,3 +1,4 @@
+import re
 #!/usr/bin/env python3
 """Guards for privacy-first video metadata export."""
 from pathlib import Path
@@ -19,7 +20,7 @@ checks = {
     "large exports cancellable": "Task.checkCancellation()" in video and "exportTask?.cancel()" in tools,
     "only supported video types": '"mp4", "mov", "m4v"' in tools,
     "share only clean generated copy": "ExplorerShareSheet(urls: [cleanURL])" in tools,
-    "new version": pbx.count("MARKETING_VERSION = 0.11.4;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 35;") == 2,
+    "version not downgraded": (len(re.findall(r"MARKETING_VERSION = (\d+)\.(\d+)\.(\d+);", pbx)) == 2 and all(tuple(map(int, v)) >= (0, 11, 4) for v in re.findall(r"MARKETING_VERSION = (\d+)\.(\d+)\.(\d+);", pbx)) and len(re.findall(r"CURRENT_PROJECT_VERSION = (\d+);", pbx)) == 2 and all(int(v) >= 35 for v in re.findall(r"CURRENT_PROJECT_VERSION = (\d+);", pbx))),
 }
 for title, ok in checks.items():
     print(("OK " if ok else "FAIL ") + title)

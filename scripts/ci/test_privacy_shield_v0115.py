@@ -1,3 +1,4 @@
+import re
 #!/usr/bin/env python3
 """Protection against accidental disclosure in app snapshots / recording."""
 from pathlib import Path
@@ -17,7 +18,7 @@ checks={
     "blocking cover not just blur": "view.backgroundColor = .black" in b and "view.isUserInteractionEnabled = true" in b,
     "cover readable to accessibility": "view.accessibilityViewIsModal = true" in b,
     "screen capture checked at launch": "if PrivacyShield.isScreenCaptureActive()" in a,
-    "version advanced": p.count("MARKETING_VERSION = 0.11.5;")==2 and p.count("CURRENT_PROJECT_VERSION = 36;")==2,
+    "version advanced at least": (len(re.findall(r"MARKETING_VERSION = (\d+)\.(\d+)\.(\d+);", p)) == 2 and all(tuple(map(int, v)) >= (0, 11, 5) for v in re.findall(r"MARKETING_VERSION = (\d+)\.(\d+)\.(\d+);", p)) and len(re.findall(r"CURRENT_PROJECT_VERSION = (\d+);", p)) == 2 and all(int(v) >= 36 for v in re.findall(r"CURRENT_PROJECT_VERSION = (\d+);", p))),
 }
 for k,v in checks.items():print(("OK " if v else "FAIL ")+k)
 if not all(checks.values()):sys.exit(1)
