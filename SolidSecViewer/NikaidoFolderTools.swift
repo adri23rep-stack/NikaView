@@ -289,19 +289,39 @@ struct NikaidoCleanShare: View {
     @State private var cleanURL: URL?
     @State private var error: String?
     @State private var showShare = false
+    @State private var isPreparing = false
+    @State private var exportTask: Task<Void, Never>?
+
+    private var isVideo: Bool {
+        ["mp4", "mov", "m4v"].contains(url.pathExtension.lowercased())
+    }
+    private var isImage: Bool {
+        ["jpg", "jpeg", "png", "heic"].contains(url.pathExtension.lowercased())
+    }
 
     var body: some View {
         Form {
-            Section("Privacidad") {
-                Text("Crea una copia nueva de la imagen sin ubicación GPS ni fecha EXIF, preservando el archivo original.")
-                Button("Preparar copia limpia") { prepare() }
-                    .disabled(!["jpg", "jpeg", "png", "heic"].contains(url.pathExtension.lowercased()))
+            Section("Privacidad antes de compartir") {
+                Text(isVideo
+                     ? "Genera una copia temporal MOV y elimina metadatos identificables de ubicación, fecha y autor. El video puede volver a codificarse y usar espacio adicional. El original permanece intacto."
+                     : "Crea una copia nueva de la imagen sin ubicación GPS ni fecha EXIF. El original permanece intacto.")
+                    .font(.footnote)
+                Button(isVideo ? "Preparar video sin metadatos" : "Preparar imagen sin metadatos") {
+                    prepare()
+                }
+                .disabled(isPreparing || !(isImage || isVideo))
+                if isPreparing {
+                    ProgressView("Exportando y revisando datos de privacidad…")
+                }
                 if let cleanURL {
                     Text(cleanURL.lastPathComponent)
-                    Button("Compartir copia sin metadatos") { showShare = true }
+                    Button("Compartir copia revisada") { showShare = true }
+                        .disabled(isPreparing)
                 }
-                if let error { Text(error).foregroundStyle(.red) }
-                Text("Los videos y otros formatos todavía no se limpian aquí.")
+                if let error {
+                    Text(error).foregroundStyle(.red)
+                }
+                Text("La copia solo se puede compartir después de terminar la exportación. La fecha del nuevo archivo puede ser la actual.")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -309,26 +329,57 @@ struct NikaidoCleanShare: View {
             if let cleanURL { ExplorerShareSheet(urls: [cleanURL]) }
         }
         .onDisappear {
+            exportTask?.cancel()
             if let cleanURL { try? FileManager.default.removeItem(at: cleanURL) }
         }
     }
 
     private func prepare() {
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+        guard !isPreparing else { return }
+        if let cleanURL {
+            try? FileManager.default.removeItem(at: cleanURL)
+            self.cleanURL = nil
+        }
+        error = nil
+        if isVideo {
+            isPreparing = true
+            let source = url
+            exportTask = Task {
+                do {
+                    let output = try await NikaidoVideoCleanExporter.exportCleanCopy(from: source)
+                    guard !Task.isCancelled else {
+                        try? FileManager.default.removeItem(at: output)
+                        isPreparing = false
+                        return
+                    }
+                    cleanURL = output
+                } catch {
+                    self.error = error.localizedDescription
+                }
+                isPreparing = false
+            }
+            return
+        }
+
+        guard isImage, let source = CGImageSourceCreateWithURL(url as CFURL, nil),
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
             error = "No se pudo decodificar la imagen."
             return
         }
-        // Decode pixels and encode them again WITHOUT passing source EXIF/IPTC/GPS metadata.
-        let out = FileManager.default.temporaryDirectory.appendingPathComponent("NikaView-clean-\(UUID().uuidString).png")
-        guard let destination = CGImageDestinationCreateWithURL(out as CFURL, UTType.png.identifier as CFString, 1, nil) else {
+        let out = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NikaView-clean-" + UUID().uuidString + ".png")
+        guard let destination = CGImageDestinationCreateWithURL(
+            out as CFURL, UTType.png.identifier as CFString, 1, nil
+        ) else {
             error = "No se pudo crear la copia."
             return
         }
         CGImageDestinationAddImage(destination, image, nil)
-        guard CGImageDestinationFinalize(destination) else { error = "No se pudo guardar la copia."; return }
+        guard CGImageDestinationFinalize(destination) else {
+            error = "No se pudo guardar la copia."
+            return
+        }
         cleanURL = out
-        error = nil
     }
 }
 
