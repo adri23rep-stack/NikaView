@@ -534,52 +534,70 @@ struct HomeView: View {
         Button {
             onOpenVault()
         } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "lock.shield")
-                    .font(.system(size: 22, weight: .semibold))
-                    .frame(width: 46, height: 46)
-                    .background(Circle().fill(Color.white.opacity(0.20)))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Nikaido Vault")
-                        .font(.system(size: 18, weight: .bold))
-
-                    Text("Cifrado · Face ID")
-                        .font(.footnote)
-                        .foregroundStyle(Color.white.opacity(0.92))
-                }
-
-                Spacer(minLength: 4)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .padding(.trailing, 12)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .frame(height: 74)
-            .background(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+            ZStack {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [nikaidoAccent, nikaidoAccent.nikaidoDarkened(0.7)],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                            colors: [
+                                nikaidoAccent.nikaidoDarkened(0.88),
+                                nikaidoAccent.nikaidoDarkened(0.67)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
                     )
-            )
-            .shadow(color: nikaidoAccent.opacity(0.27), radius: 15, y: 7)
-            .overlay(alignment: .trailing) {
-                HomeVaultBubbles(tint: nikaidoAccent, animated: !reduceMotion)
-                    .frame(width: 72, height: 74)
-                    .offset(x: 22)
-                    .allowsHitTesting(false)
+
+                // Burbujas tenues dentro de la tarjeta, sin formas que sobresalgan.
+                HomeVaultBubbles(
+                    tint: .white,
+                    animated: !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
+                )
+                .frame(width: 92, height: 76)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.trailing, 8)
+                .allowsHitTesting(false)
+
+                HStack(spacing: 14) {
+                    Image(systemName: "lock.shield.fill")
+                        .font(.system(size: 21, weight: .medium))
+                        .frame(width: 45, height: 45)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(.white.opacity(0.14))
+                        )
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Nikaido Vault")
+                            .font(.system(size: 18, weight: .semibold))
+
+                        Text("Tu espacio privado")
+                            .font(.footnote)
+                            .foregroundStyle(.white.opacity(0.78))
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .padding(.trailing, 4)
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 16)
             }
+            .frame(height: 76)
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .shadow(color: nikaidoAccent.opacity(0.16), radius: 12, y: 5)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Abrir Nikaido Vault")
     }
 
-    // MARK: Por tipo
+        // MARK: Por tipo
 
     private var categoriesSection: some View {
         VStack(spacing: 8) {
@@ -715,31 +733,18 @@ private struct HomeVaultBubbles: View {
         let phase: Double
     }
 
-    // Small varying bubbles around the trailing edge, not over the text.
+    // Anillos diminutos que no cubren el texto ni deforman la tarjeta.
     private let bubbles: [Bubble] = [
-        Bubble(x: 33, y: 9, radius: 3.0, speed: 0.7, phase: 0.0),
-        Bubble(x: 48, y: 17, radius: 4.2, speed: 0.9, phase: 1.1),
-        Bubble(x: 61, y: 29, radius: 3.2, speed: 0.6, phase: 2.2),
-        Bubble(x: 38, y: 42, radius: 5.0, speed: 0.8, phase: 0.7),
-        Bubble(x: 60, y: 53, radius: 2.5, speed: 0.9, phase: 1.8),
-        Bubble(x: 48, y: 66, radius: 3.0, speed: 0.7, phase: 2.4)
+        Bubble(x: 12, y: 11, radius: 2.6, speed: 0.6, phase: 0.2),
+        Bubble(x: 34, y: 23, radius: 3.6, speed: 0.8, phase: 1.1),
+        Bubble(x: 57, y: 11, radius: 2.2, speed: 0.7, phase: 2.0),
+        Bubble(x: 13, y: 60, radius: 3.8, speed: 0.5, phase: 1.6),
+        Bubble(x: 43, y: 55, radius: 2.8, speed: 0.9, phase: 2.7),
+        Bubble(x: 65, y: 68, radius: 2.0, speed: 0.6, phase: 0.9)
     ]
 
     var body: some View {
-        ZStack {
-            // Two rounded lobes merge with the original card to suggest
-            // gently melting glass rather than a second bulky button.
-            Circle()
-                .fill(tint)
-                .frame(width: 25, height: 25)
-                .overlay(Circle().strokeBorder(.white.opacity(0.36), lineWidth: 1))
-                .offset(x: -10, y: -8)
-            Circle()
-                .fill(tint.opacity(0.93))
-                .frame(width: 16, height: 16)
-                .overlay(Circle().strokeBorder(.white.opacity(0.38), lineWidth: 1))
-                .offset(x: 1, y: 17)
-
+        Group {
             if animated {
                 TimelineView(.animation(minimumInterval: 1.0 / 18.0)) { timeline in
                     bubbleCanvas(time: timeline.date.timeIntervalSinceReferenceDate)
@@ -754,7 +759,7 @@ private struct HomeVaultBubbles: View {
     private func bubbleCanvas(time: TimeInterval) -> some View {
         Canvas { context, _ in
             for bubble in bubbles {
-                let drift = CGFloat(sin(time * bubble.speed + bubble.phase)) * 4
+                let drift = CGFloat(sin(time * bubble.speed + bubble.phase)) * 2.5
                 let radius = bubble.radius
                 let rect = CGRect(
                     x: bubble.x - radius,
@@ -762,9 +767,9 @@ private struct HomeVaultBubbles: View {
                     width: radius * 2,
                     height: radius * 2
                 )
-                let circle = Path(ellipseIn: rect)
-                context.fill(circle, with: .color(tint.opacity(0.68)))
-                context.stroke(circle, with: .color(.white.opacity(0.72)), lineWidth: 1)
+                let ring = Path(ellipseIn: rect)
+                context.fill(ring, with: .color(tint.opacity(0.07)))
+                context.stroke(ring, with: .color(tint.opacity(0.35)), lineWidth: 0.9)
             }
         }
     }
