@@ -28,7 +28,7 @@ checks = {
     "vault animations pause in low power mode": "animated: !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled" in home,
     "glossy bubbles render even without animation": "bubbleCanvas(time: 0)" in home,
     "no obsolete sparkles": "HomeVaultSparkles" not in home,
-    "version v0.12.3": pbx.count("MARKETING_VERSION = 0.12.3;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 40;") == 2,
+    "version v0.12.4": pbx.count("MARKETING_VERSION = 0.12.4;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 41;") == 2,
 }
 for name, ok in checks.items():
     print(("OK " if ok else "FAIL ") + name)
