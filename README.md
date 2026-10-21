@@ -4,6 +4,13 @@
 
 > **Estado:** proyecto experimental en desarrollo · **Plataforma:** iOS 16 o posterior · **Lenguaje:** Swift / SwiftUI
 
+## NikaView v0.12.3 — Animaciones visibles y logo limpio
+
+- La N salta de nuevo al entrar a Inicio y muestra «¡Hazme click!» por unos segundos cada vez, sin ocultarlo para siempre.
+- Las burbujas suben visiblemente en 1.5–2.5 segundos y viven en un espacio separado del logo y del texto de Vault.
+- Burbujas de aspecto transparente, menos cantidad, sin formas sobresalientes ni manchas sobre la marca.
+- Conserva los ajustes de accesibilidad, el modo de bajo consumo y la seguridad de la bóveda.
+
 ## NikaView v0.12.2 — Liquid Glass inferior y bóveda renovada
 
 - Globo «¡Hazme click!» junto a la N animada para descubrir Ajustes; desaparece después de unos segundos o al tocarla, y recuerda cuando ya la usaste.

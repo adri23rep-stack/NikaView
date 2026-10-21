@@ -182,7 +182,7 @@ struct HomeView: View {
     @Environment(\.nikaidoAccent) private var nikaidoAccent
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @AppStorage("nikaido.settingsHintAlreadyTapped") private var settingsHintAlreadyTapped = false
+    @State private var homeIntroTask: Task<Void, Never>?
 
     @State private var logoOffset: CGFloat = 0
     @State private var showSettingsHint = false
@@ -219,20 +219,29 @@ struct HomeView: View {
                 onOpenExplorer(kind)
             }
         }
-        .task {
+        .onAppear {
             recentFolders = NikaidoRecents.all
             lavaDrift = !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
-            if !settingsHintAlreadyTapped {
-                showSettingsHint = true
-            }
-            await playLogoHop()
-            try? await Task.sleep(nanoseconds: 4_500_000_000)
-            guard !Task.isCancelled else { return }
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) {
-                showSettingsHint = false
+
+            // Repeat the little greeting whenever Home appears, not just on
+            // the first launch. Never persistently suppress the speech bubble.
+            homeIntroTask?.cancel()
+            logoOffset = 0
+            showSettingsHint = true
+            homeIntroTask = Task {
+                await playLogoHop()
+                guard !Task.isCancelled else { return }
+                try? await Task.sleep(nanoseconds: 4_500_000_000)
+                guard !Task.isCancelled else { return }
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) {
+                    showSettingsHint = false
+                }
             }
         }
         .onDisappear {
+            homeIntroTask?.cancel()
+            homeIntroTask = nil
+            logoOffset = 0
             lavaDrift = false
             showSettingsHint = false
         }
@@ -345,7 +354,6 @@ struct HomeView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Button {
-                settingsHintAlreadyTapped = true
                 withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
                     showSettingsHint = false
                 }
@@ -402,23 +410,25 @@ struct HomeView: View {
         .padding(.top, 8)
     }
 
-    /// Un par de saltos al abrir la app para llamar la atención hacia la N.
+    /// Animación visible que se repite al volver a Inicio.
     private func playLogoHop() async {
         guard !reduceMotion else { return }
 
-        try? await Task.sleep(nanoseconds: 600_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        guard !Task.isCancelled else { return }
 
-        for height in [CGFloat(-14), CGFloat(-7)] {
+        for height in [CGFloat(-17), CGFloat(-9), CGFloat(-15)] {
             guard !Task.isCancelled else { return }
-            withAnimation(.easeOut(duration: 0.18)) {
+            withAnimation(.easeOut(duration: 0.16)) {
                 logoOffset = height
             }
             try? await Task.sleep(nanoseconds: 180_000_000)
+            guard !Task.isCancelled else { return }
 
-            withAnimation(.easeIn(duration: 0.16)) {
+            withAnimation(.easeIn(duration: 0.15)) {
                 logoOffset = 0
             }
-            try? await Task.sleep(nanoseconds: 240_000_000)
+            try? await Task.sleep(nanoseconds: 190_000_000)
         }
     }
 
@@ -534,7 +544,47 @@ struct HomeView: View {
         Button {
             onOpenVault()
         } label: {
-            ZStack {
+            HStack(spacing: 12) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 21, weight: .medium))
+                    .frame(width: 44, height: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(.white.opacity(0.14))
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Nikaido Vault")
+                        .font(.system(size: 18, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
+
+                    Text("Tu espacio privado")
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.78))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+
+                Spacer(minLength: 2)
+
+                // Dedicated decoration area: no bubbles on the logo or title.
+                HomeVaultBubbles(
+                    tint: .white,
+                    animated: !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
+                )
+                .frame(width: 43, height: 66)
+                .accessibilityHidden(true)
+                .allowsHitTesting(false)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.82))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .frame(height: 76)
+            .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(
                         LinearGradient(
@@ -546,46 +596,7 @@ struct HomeView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-
-                // Burbujas tenues dentro de la tarjeta, sin formas que sobresalgan.
-                HomeVaultBubbles(
-                    tint: .white,
-                    animated: !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
-                )
-                .frame(width: 92, height: 76)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.trailing, 8)
-                .allowsHitTesting(false)
-
-                HStack(spacing: 14) {
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 21, weight: .medium))
-                        .frame(width: 45, height: 45)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(.white.opacity(0.14))
-                        )
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Nikaido Vault")
-                            .font(.system(size: 18, weight: .semibold))
-
-                        Text("Tu espacio privado")
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.78))
-                    }
-
-                    Spacer(minLength: 8)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.82))
-                        .padding(.trailing, 4)
-                }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-            }
-            .frame(height: 76)
+            )
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .strokeBorder(.white.opacity(0.18), lineWidth: 1)
@@ -597,7 +608,7 @@ struct HomeView: View {
         .accessibilityLabel("Abrir Nikaido Vault")
     }
 
-        // MARK: Por tipo
+    // MARK: Por tipo
 
     private var categoriesSection: some View {
         VStack(spacing: 8) {
@@ -727,26 +738,24 @@ private struct HomeVaultBubbles: View {
 
     private struct Bubble {
         let x: CGFloat
-        let y: CGFloat
         let radius: CGFloat
         let speed: Double
         let phase: Double
     }
 
-    // Anillos diminutos que no cubren el texto ni deforman la tarjeta.
+    // Small translucent glass beads float upward in roughly 1.5–2.5 seconds.
+    // The right-hand strip keeps them clear of Nikaido's brand mark and text.
     private let bubbles: [Bubble] = [
-        Bubble(x: 12, y: 11, radius: 2.6, speed: 0.6, phase: 0.2),
-        Bubble(x: 34, y: 23, radius: 3.6, speed: 0.8, phase: 1.1),
-        Bubble(x: 57, y: 11, radius: 2.2, speed: 0.7, phase: 2.0),
-        Bubble(x: 13, y: 60, radius: 3.8, speed: 0.5, phase: 1.6),
-        Bubble(x: 43, y: 55, radius: 2.8, speed: 0.9, phase: 2.7),
-        Bubble(x: 65, y: 68, radius: 2.0, speed: 0.6, phase: 0.9)
+        Bubble(x: 8, radius: 2.8, speed: 0.64, phase: 0.08),
+        Bubble(x: 17, radius: 4.0, speed: 0.51, phase: 0.41),
+        Bubble(x: 29, radius: 3.3, speed: 0.57, phase: 0.70),
+        Bubble(x: 37, radius: 2.5, speed: 0.69, phase: 0.24)
     ]
 
     var body: some View {
         Group {
             if animated {
-                TimelineView(.animation(minimumInterval: 1.0 / 18.0)) { timeline in
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
                     bubbleCanvas(time: timeline.date.timeIntervalSinceReferenceDate)
                 }
             } else {
@@ -757,19 +766,32 @@ private struct HomeVaultBubbles: View {
     }
 
     private func bubbleCanvas(time: TimeInterval) -> some View {
-        Canvas { context, _ in
+        Canvas { context, size in
             for bubble in bubbles {
-                let drift = CGFloat(sin(time * bubble.speed + bubble.phase)) * 2.5
+                let progress = CGFloat(
+                    (time * bubble.speed + bubble.phase).truncatingRemainder(dividingBy: 1)
+                )
                 let radius = bubble.radius
+                let drift = CGFloat(sin(time * 3 + bubble.phase * 6)) * 2
                 let rect = CGRect(
-                    x: bubble.x - radius,
-                    y: bubble.y + drift - radius,
+                    x: bubble.x + drift - radius,
+                    y: size.height + radius - progress * (size.height + radius * 2) - radius,
                     width: radius * 2,
                     height: radius * 2
                 )
-                let ring = Path(ellipseIn: rect)
-                context.fill(ring, with: .color(tint.opacity(0.07)))
-                context.stroke(ring, with: .color(tint.opacity(0.35)), lineWidth: 0.9)
+                let fade = max(CGFloat(0), min(CGFloat(1),
+                    min(progress * 6, (1 - progress) * 6)))
+                let circle = Path(ellipseIn: rect)
+                context.fill(circle, with: .color(tint.opacity(0.12 * Double(fade))))
+                context.stroke(circle, with: .color(tint.opacity(0.72 * Double(fade))), lineWidth: 1.0)
+
+                let highlight = Path(ellipseIn: CGRect(
+                    x: rect.minX + radius * 0.42,
+                    y: rect.minY + radius * 0.22,
+                    width: radius * 0.45,
+                    height: radius * 0.45
+                ))
+                context.fill(highlight, with: .color(.white.opacity(0.42 * Double(fade))))
             }
         }
     }
