@@ -75,7 +75,7 @@ struct ContentView: View {
                         launchRequest: launchRequest,
                         onOpenHome: {
                             launchRequest = nil
-                            navigate(.home, animated: false)
+                            navigate(.home)
                         },
                         onOpenVault: {
                             launchRequest = nil
