@@ -596,9 +596,10 @@ struct ExplorerView: View {
             Button {
                 onOpenHome()
             } label: {
-                Image(systemName: "house")
+                NikaidoBrandMark(accent: nikaidoAccent, size: 32)
+                    .frame(width: 44, height: 44)
             }
-            .buttonStyle(NikaidoIconButtonStyle())
+            .buttonStyle(NikaidoPressCardStyle())
             .accessibilityLabel("Inicio")
 
             Button {
