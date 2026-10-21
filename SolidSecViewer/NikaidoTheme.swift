@@ -196,3 +196,147 @@ struct NikaidoGlassFloatingCircle: ViewModifier {
         }
     }
 }
+
+
+// MARK: - Identidad visual NikaView v0.12.4
+
+/// Emblema vectorial: no usa imágenes rasterizadas y se adapta al acento elegido.
+struct NikaidoBrandMark: View {
+    let accent: Color
+    var size: CGFloat = 48
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.32, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [accent, accent.nikaidoDarkened(0.70)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Circle()
+                .fill(.white.opacity(0.17))
+                .frame(width: size * 0.72, height: size * 0.72)
+                .offset(x: -size * 0.28, y: -size * 0.30)
+
+            NikaidoNMark()
+                .stroke(
+                    Color.white,
+                    style: StrokeStyle(
+                        lineWidth: max(2, size * 0.052),
+                        lineCap: .round,
+                        lineJoin: .round
+                    )
+                )
+                .padding(size * 0.14)
+
+            RoundedRectangle(cornerRadius: size * 0.32, style: .continuous)
+                .strokeBorder(.white.opacity(0.24), lineWidth: 1)
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.32, style: .continuous))
+        .shadow(color: accent.opacity(0.24), radius: size * 0.18, y: size * 0.09)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Íconos de categorías, carpetas y almacenamiento con el mismo lenguaje visual.
+struct NikaidoFeatureMark: View {
+    let systemName: String
+    let tint: Color
+    var size: CGFloat = 48
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [tint.opacity(0.23), tint.opacity(0.09)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .strokeBorder(tint.opacity(0.14), lineWidth: 1)
+
+            Image(systemName: systemName)
+                .symbolRenderingMode(.hierarchical)
+                .font(.system(size: size * 0.43, weight: .semibold))
+                .foregroundStyle(tint)
+
+            Circle()
+                .fill(tint.opacity(0.88))
+                .frame(width: size * 0.09, height: size * 0.09)
+                .offset(x: size * 0.31, y: -size * 0.31)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Identificador de la bóveda, separado del emblema principal y sin tapar las burbujas.
+struct NikaidoVaultMark: View {
+    let tint: Color
+    var size: CGFloat = 48
+    var onDarkBackground = false
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.29, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: onDarkBackground
+                            ? [.white.opacity(0.21), .white.opacity(0.09)]
+                            : [tint, tint.nikaidoDarkened(0.69)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            RoundedRectangle(cornerRadius: size * 0.29, style: .continuous)
+                .strokeBorder(.white.opacity(0.24), lineWidth: 1)
+
+            Image(systemName: "lock.shield.fill")
+                .font(.system(size: size * 0.45, weight: .semibold))
+                .foregroundStyle(.white)
+
+            Circle()
+                .fill(.white.opacity(0.21))
+                .frame(width: size * 0.30, height: size * 0.30)
+                .overlay {
+                    NikaidoNMark()
+                        .stroke(
+                            Color.white,
+                            style: StrokeStyle(
+                                lineWidth: max(0.85, size * 0.025),
+                                lineCap: .round,
+                                lineJoin: .round
+                            )
+                        )
+                        .padding(size * 0.035)
+                }
+                .offset(x: size * 0.27, y: size * 0.27)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Respuesta táctil visual sutil, desactivada si iOS solicita reducir movimiento.
+struct NikaidoPressCardStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(Rectangle())
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.975 : 1))
+            .opacity(configuration.isPressed ? 0.92 : 1)
+            .animation(
+                reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.80),
+                value: configuration.isPressed
+            )
+    }
+}
