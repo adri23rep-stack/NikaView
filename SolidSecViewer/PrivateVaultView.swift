@@ -969,16 +969,14 @@ struct PrivateVaultView: View {
                     )
                 } else {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.quaternary)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(nikaidoAccent.opacity(0.07))
 
-                        Image(systemName: icon(for: entry))
-                            .font(.system(size: 38))
-                            .foregroundStyle(
-                                entry.kind == .folder
-                                ? .yellow
-                                : .secondary
-                            )
+                        NikaidoFeatureMark(
+                            systemName: icon(for: entry),
+                            tint: entry.kind == .folder ? .orange : nikaidoAccent,
+                            size: 64
+                        )
                     }
                     .aspectRatio(1.25, contentMode: .fit)
                 }
