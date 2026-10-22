@@ -28,7 +28,8 @@ permissions:
 jobs:
   build:
     name: Audit, build and validate unsigned iOS IPA
-    runs-on: macos-26
+    # Intel pool to bypass macos-26 arm64 queue cancellation; Xcode 26.6 is installed.
+    runs-on: macos-26-intel
     timeout-minutes: 30
 
     env:
