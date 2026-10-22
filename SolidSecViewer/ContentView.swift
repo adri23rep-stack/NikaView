@@ -10,6 +10,7 @@ private enum AppMode {
 
 struct ContentView: View {
     @EnvironmentObject private var vault: VaultSession
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var privateVault = PrivateVaultSession()
     @StateObject private var locations = SecurityScopedFolderStore()
 
@@ -33,6 +34,17 @@ struct ContentView: View {
     @State private var showHidden = false
     @State private var search = ""
 
+    /// Anima vistas públicas. Cerrar la bóveda no retiene cuadros con datos privados.
+    private func navigate(_ target: AppMode, animated: Bool = true) {
+        if animated && !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled {
+            withAnimation(.easeInOut(duration: 0.24)) {
+                mode = target
+            }
+        } else {
+            mode = target
+        }
+    }
+
     private var visibleItems: [VaultItem] {
         vault.items.filter { item in
             (showHidden || !item.name.hasPrefix(".")) &&
@@ -49,12 +61,13 @@ struct ContentView: View {
                         locations: locations,
                         onOpenExplorer: { kind in
                             launchRequest = ExplorerLaunchRequest(kind: kind)
-                            mode = .explorer
+                            navigate(.explorer)
                         },
                         onOpenVault: {
-                            mode = .privateVault
+                            navigate(.privateVault)
                         }
                     )
+                    .transition(.opacity.combined(with: .scale(scale: 0.985)))
 
                 case .explorer:
                     ExplorerView(
@@ -62,28 +75,31 @@ struct ContentView: View {
                         launchRequest: launchRequest,
                         onOpenHome: {
                             launchRequest = nil
-                            mode = .home
+                            navigate(.home)
                         },
                         onOpenVault: {
                             launchRequest = nil
-                            mode = .privateVault
+                            navigate(.privateVault)
                         },
                         onOpenSecReader: {
                             launchRequest = nil
-                            mode = .secReader
+                            navigate(.secReader)
                         }
                     )
                     .environmentObject(privateVault)
+                    .transition(.opacity.combined(with: .scale(scale: 0.985)))
 
                 case .privateVault:
                     PrivateVaultView {
                         privateVault.lock()
-                        mode = .home
+                        navigate(.home, animated: false)
                     }
                     .environmentObject(privateVault)
+                    .transition(.opacity)
 
                 case .secReader:
                     secReaderScreen
+                        .transition(.opacity)
                 }
             }
         }
@@ -373,7 +389,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
 
             Button {
-                mode = .privateVault
+                navigate(.privateVault)
             } label: {
                 HStack {
                     Image(systemName: "externaldrive.badge.lock")
@@ -398,7 +414,7 @@ struct ContentView: View {
             .padding(.horizontal)
 
             Button {
-                mode = .secReader
+                navigate(.secReader)
             } label: {
                 HStack {
                     Image(systemName: "folder.badge.gearshape")
@@ -448,7 +464,7 @@ struct ContentView: View {
             HStack {
                 Button {
                     cleanupZipExtraction(clearVault: true)
-                    mode = .explorer
+                    navigate(.explorer)
                 } label: {
                     Label("Explorer", systemImage: "chevron.left")
                 }
@@ -576,7 +592,7 @@ struct ContentView: View {
                 Button {
                     cleanupZipExtraction(clearVault: true)
                     selectedItem = nil
-                    mode = .explorer
+                    navigate(.explorer)
                 } label: {
                     Image(systemName: "house")
                 }

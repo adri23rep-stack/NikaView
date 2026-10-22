@@ -187,6 +187,11 @@ struct HomeView: View {
     @State private var logoOffset: CGFloat = 0
     @State private var showSettingsHint = false
     @State private var lavaDrift = false
+    @State private var showHomeContent = false
+
+    private var motionEnabled: Bool {
+        !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
+    }
     @State private var tourSource: HomeTourSource?
     @State private var showAllFolders = false
     @StateObject private var savedFavorites = ExplorerFavoritesStore()
@@ -200,9 +205,13 @@ struct HomeView: View {
                 VStack(spacing: 14) {
                     header
                     storageSection
+                        .nikaidoHomeEntrance(showHomeContent, enabled: motionEnabled, delay: 0.00)
                     vaultBar
+                        .nikaidoHomeEntrance(showHomeContent, enabled: motionEnabled, delay: 0.07)
                     quickAccessSection
+                        .nikaidoHomeEntrance(showHomeContent, enabled: motionEnabled, delay: 0.13)
                     categoriesSection
+                        .nikaidoHomeEntrance(showHomeContent, enabled: motionEnabled, delay: 0.18)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -221,6 +230,8 @@ struct HomeView: View {
         }
         .onAppear {
             recentFolders = NikaidoRecents.all
+            showHomeContent = false
+            DispatchQueue.main.async { showHomeContent = true }
             lavaDrift = !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
 
             // Repeat the little greeting whenever Home appears, not just on
@@ -244,6 +255,7 @@ struct HomeView: View {
             logoOffset = 0
             lavaDrift = false
             showSettingsHint = false
+            showHomeContent = false
         }
     }
 
@@ -359,18 +371,7 @@ struct HomeView: View {
                 }
                 onOpenExplorer(.settings)
             } label: {
-                NikaidoNMark()
-                    .stroke(
-                        Color.white,
-                        style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round)
-                    )
-                    .frame(width: 26, height: 26)
-                    .frame(width: 48, height: 48)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(nikaidoAccent)
-                    )
-                    .shadow(color: .black.opacity(0.20), radius: 7, y: 4)
+                NikaidoBrandMark(accent: nikaidoAccent, size: 48)
             }
             .buttonStyle(.plain)
             .offset(y: logoOffset)
@@ -394,15 +395,22 @@ struct HomeView: View {
             }
             .zIndex(1)
 
-            HStack(spacing: 0) {
-                Text("Nika")
-                    .tracking(-0.8)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 0) {
+                    Text("Nika")
+                        .tracking(-0.8)
 
-                Text("View")
-                    .tracking(-0.8)
-                    .opacity(0.72)
+                    Text("View")
+                        .tracking(-0.8)
+                        .opacity(0.72)
+                }
+                .font(.system(size: 32, weight: .bold))
+
+                Text("TUS ARCHIVOS, A TU ESTILO")
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .tracking(1.3)
+                    .foregroundStyle(.secondary)
             }
-            .font(.system(size: 32, weight: .bold))
 
             Spacer()
         }
@@ -492,11 +500,11 @@ struct HomeView: View {
             onOpenExplorer(.files)
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: "folder.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .background(Circle().fill(nikaidoAccent))
+                NikaidoFeatureMark(
+                    systemName: "folder.fill",
+                    tint: nikaidoAccent,
+                    size: 48
+                )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("NikaView Files")
@@ -535,7 +543,7 @@ struct HomeView: View {
             .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
             .foregroundStyle(.primary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NikaidoPressCardStyle())
     }
 
     // MARK: Vault
@@ -545,13 +553,11 @@ struct HomeView: View {
             onOpenVault()
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 21, weight: .medium))
-                    .frame(width: 44, height: 44)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(.white.opacity(0.14))
-                    )
+                NikaidoVaultMark(
+                    tint: nikaidoAccent,
+                    size: 44,
+                    onDarkBackground: true
+                )
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Nikaido Vault")
@@ -604,7 +610,7 @@ struct HomeView: View {
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .shadow(color: nikaidoAccent.opacity(0.16), radius: 12, y: 5)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NikaidoPressCardStyle())
         .accessibilityLabel("Abrir Nikaido Vault")
     }
 
@@ -640,13 +646,11 @@ struct HomeView: View {
                         onOpenExplorer(.global(category.filter))
                     } label: {
                         VStack(spacing: 9) {
-                            Image(systemName: category.symbol)
-                                .font(.system(size: 22, weight: .medium))
-                                .foregroundStyle(nikaidoAccent)
-                                .frame(width: 48, height: 48)
-                                .background(
-                                    Circle().fill(nikaidoAccent.opacity(0.22))
-                                )
+                            NikaidoFeatureMark(
+                                systemName: category.symbol,
+                                tint: nikaidoAccent,
+                                size: 48
+                            )
 
                             Text(category.title)
                                 .font(.subheadline.weight(.semibold))
@@ -661,7 +665,7 @@ struct HomeView: View {
                         )
                         .foregroundStyle(.primary)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(NikaidoPressCardStyle())
                 }
             }
         }
@@ -702,11 +706,11 @@ private struct HomeStorageCard: View {
                     .offset(x: 84, y: 62)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    Image(systemName: symbol)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 42, height: 42)
-                        .background(Circle().fill(Color.white.opacity(0.22)))
+                    NikaidoFeatureMark(
+                        systemName: symbol,
+                        tint: .white,
+                        size: 42
+                    )
 
                     Spacer(minLength: 8)
 
@@ -726,7 +730,7 @@ private struct HomeStorageCard: View {
             .frame(height: 140)
             .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NikaidoPressCardStyle())
     }
 }
 
@@ -1363,5 +1367,33 @@ struct HomeAllFoldersView: View {
                     $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending
                 }
         }.value
+    }
+}
+
+
+// Las secciones llegan en secuencia sin retener vistas privadas en pantalla.
+private struct NikaidoHomeEntrance: ViewModifier {
+    let visible: Bool
+    let enabled: Bool
+    let delay: Double
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(!enabled || visible ? 1 : 0)
+            .offset(y: !enabled || visible ? 0 : 12)
+            .animation(
+                enabled ? .easeOut(duration: 0.36).delay(delay) : nil,
+                value: visible
+            )
+    }
+}
+
+private extension View {
+    func nikaidoHomeEntrance(
+        _ visible: Bool,
+        enabled: Bool,
+        delay: Double
+    ) -> some View {
+        modifier(NikaidoHomeEntrance(visible: visible, enabled: enabled, delay: delay))
     }
 }

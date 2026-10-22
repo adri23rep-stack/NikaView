@@ -386,15 +386,11 @@ struct PrivateVaultView: View {
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 14) {
-                Image(systemName: symbol)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(isEnabled ? nikaidoAccent : Color.secondary)
-                    .frame(width: 46, height: 46)
-                    .background(
-                        Circle().fill(
-                            (isEnabled ? nikaidoAccent : Color.secondary).opacity(0.18)
-                        )
-                    )
+                NikaidoFeatureMark(
+                    systemName: symbol,
+                    tint: isEnabled ? nikaidoAccent : .secondary,
+                    size: 46
+                )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
@@ -419,7 +415,7 @@ struct PrivateVaultView: View {
             )
             .opacity(isEnabled ? 1 : 0.6)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NikaidoPressCardStyle())
         .disabled(!isEnabled)
     }
 
@@ -520,20 +516,7 @@ struct PrivateVaultView: View {
                     Spacer()
                 }
 
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 40, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 92, height: 92)
-                    .background(
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [nikaidoAccent, nikaidoAccent.nikaidoDarkened(0.7)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                    )
+                NikaidoVaultMark(tint: nikaidoAccent, size: 92)
                     .shadow(
                         color: nikaidoAccent.opacity(0.35),
                         radius: 14,
@@ -986,16 +969,14 @@ struct PrivateVaultView: View {
                     )
                 } else {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.quaternary)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(nikaidoAccent.opacity(0.07))
 
-                        Image(systemName: icon(for: entry))
-                            .font(.system(size: 38))
-                            .foregroundStyle(
-                                entry.kind == .folder
-                                ? .yellow
-                                : .secondary
-                            )
+                        NikaidoFeatureMark(
+                            systemName: icon(for: entry),
+                            tint: entry.kind == .folder ? .orange : nikaidoAccent,
+                            size: 64
+                        )
                     }
                     .aspectRatio(1.25, contentMode: .fit)
                 }
