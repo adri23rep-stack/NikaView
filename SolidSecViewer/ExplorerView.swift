@@ -671,7 +671,7 @@ struct ExplorerView: View {
                                 await rightPane.refresh()
                             }
                         } label: {
-                            Label("Deshacer eliminación", systemImage: "arrow.uturn.backward")
+                            Label("Deshacer última eliminación", systemImage: "arrow.uturn.backward")
                         }
                     }
 
