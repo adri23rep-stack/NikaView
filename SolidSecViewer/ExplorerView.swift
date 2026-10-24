@@ -108,6 +108,7 @@ struct ExplorerView: View {
     @State private var editorTarget: ExplorerEditorTarget?
     @State private var showGlobalFiles = false
     @State private var globalInitialFilter: ExplorerGlobalFilter = .all
+    @State private var searchingPaneIndex: Int?
     @State private var handledLaunchID: UUID?
     @StateObject private var globalIndex = ExplorerGlobalIndex()
     @StateObject private var dragState = ExplorerDragState()
@@ -146,7 +147,6 @@ struct ExplorerView: View {
     private var explorerLayout: some View {
         GeometryReader { proxy in
             VStack(spacing: 0) {
-                explorerTopBar
 
                 if !splitOpen {
                     paneView(
@@ -591,95 +591,34 @@ struct ExplorerView: View {
         }
     }
 
-    // Solo ubicación y estado: nada de Liquid Glass arriba.
-    private var explorerTopBar: some View {
-        HStack(spacing: 10) {
-            Button {
-                showStorageLocations = true
-            } label: {
-                HStack(spacing: 6) {
-                    Text(active.location?.name ?? "Elegir almacenamiento")
-                        .font(.title3.weight(.semibold))
-                        .lineLimit(1)
-                    Image(systemName: "chevron.down")
-                        .font(.caption2.weight(.semibold))
-                }
-                .foregroundStyle(.primary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Dispositivos de almacenamiento")
-
-            Spacer(minLength: 8)
-            if isOperating || operationQueue.isRunning {
-                ProgressView().controlSize(.small)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-    }
-
     private var explorerBottomDock: some View {
-        HStack(spacing: 2) {
-            Button {
-                onOpenHome()
-            } label: {
-                Image(systemName: "house")
-                    .font(.system(size: 18))
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(NikaidoPressCardStyle())
-            .accessibilityLabel("Inicio")
-
-
-            Spacer()
-
-            if isOperating || operationQueue.isRunning {
-                ProgressView()
-                    .controlSize(.small)
-                    .padding(.trailing, 4)
-            }
-
-            if operationQueue.activeCount > 0 {
+        HStack(spacing: 12) {
+            HStack(spacing: 0) {
                 Button {
-                    showOperations = true
+                    onOpenHome()
                 } label: {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "list.bullet.rectangle")
-                        Text("\(operationQueue.activeCount)")
-                            .font(.system(size: 8, weight: .bold))
-                            .padding(3)
-                            .background(nikaidoAccent, in: Circle())
-                            .foregroundStyle(.white)
-                            .offset(x: 6, y: -6)
-                    }
+                    Image(systemName: "house")
                 }
-                .buttonStyle(NikaidoIconButtonStyle())
-                .accessibilityLabel("Cola de operaciones")
-            }
+                .accessibilityLabel("Inicio")
 
-            if trash.canUndo {
                 Button {
-                    operationQueue.enqueue(title: "Deshacer eliminación", kind: .restore) {
-                        try await trash.undoLast()
-                        await leftPane.refresh()
-                        await rightPane.refresh()
+                    if active.canGoBack {
+                        active.goBack()
+                    } else if active.canGoUp {
+                        active.goUp()
                     }
                 } label: {
-                    Image(systemName: "arrow.uturn.backward")
+                    Image(systemName: "chevron.left")
                 }
-                .buttonStyle(NikaidoIconButtonStyle())
-                .accessibilityLabel("Deshacer última eliminación")
-            }
+                .disabled(!active.canGoBack && !active.canGoUp)
+                .accessibilityLabel("Volver a la carpeta anterior")
 
-            Button {
-                toggleSplit()
-            } label: {
-                Image(systemName: splitOpen ? "rectangle" : "rectangle.split.1x2")
-            }
-            .buttonStyle(NikaidoIconButtonStyle(prominent: splitOpen))
-            .accessibilityLabel(splitOpen ? "Cerrar segundo panel" : "Abrir segundo panel")
-
-            floatingAddButton
+                Button {
+                    toggleSplit()
+                } label: {
+                    Image(systemName: splitOpen ? "rectangle" : "rectangle.split.1x2")
+                }
+                .accessibilityLabel(splitOpen ? "Un solo panel" : "Dividir pantalla")
 
             Menu {
                 Button {
@@ -695,6 +634,54 @@ struct ExplorerView: View {
                         "Todos los archivos",
                         systemImage: "square.stack"
                     )
+                }
+
+                Section("Navegación") {
+                    Button {
+                        searchingPaneIndex = activePane
+                    } label: {
+                        Label("Buscar en carpeta", systemImage: "magnifyingglass")
+                    }
+
+                    Button {
+                        active.goForward()
+                    } label: {
+                        Label("Adelante", systemImage: "chevron.right")
+                    }
+                    .disabled(!active.canGoForward)
+
+                    Button {
+                        active.goUp()
+                    } label: {
+                        Label("Carpeta superior", systemImage: "arrow.up")
+                    }
+                    .disabled(!active.canGoUp)
+
+                    Button {
+                        active.viewMode = active.viewMode == .list ? .grid : .list
+                    } label: {
+                        Label("Cambiar vista", systemImage: "square.grid.2x2")
+                    }
+
+                    if trash.canUndo {
+                        Button {
+                            operationQueue.enqueue(title: "Deshacer eliminación", kind: .restore) {
+                                try await trash.undoLast()
+                                await leftPane.refresh()
+                                await rightPane.refresh()
+                            }
+                        } label: {
+                            Label("Deshacer eliminación", systemImage: "arrow.uturn.backward")
+                        }
+                    }
+
+                    if operationQueue.activeCount > 0 {
+                        Button {
+                            showOperations = true
+                        } label: {
+                            Label("Cola de operaciones", systemImage: "list.bullet.rectangle")
+                        }
+                    }
                 }
 
                 Section("Archivos") {
@@ -914,13 +901,18 @@ struct ExplorerView: View {
             } label: {
                 Image(systemName: "ellipsis")
             }
-            .buttonStyle(NikaidoIconButtonStyle())
             .accessibilityLabel("Acciones")
+            }
+            .buttonStyle(NikaidoGlassActionStyle())
+            .padding(.horizontal, 4)
+            .padding(.vertical, 5)
+            .modifier(NikaidoGlassCapsule())
+
+            // Independiente de la cápsula: acción principal claramente separada.
+            floatingAddButton
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .modifier(NikaidoGlassCapsule())
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
         .padding(.bottom, 8)
     }
 
@@ -1113,6 +1105,10 @@ struct ExplorerView: View {
             paneIndex: index,
             isActive: activePane == index,
             showsActiveMarker: splitOpen,
+            showSearch: Binding(
+                get: { searchingPaneIndex == index },
+                set: { searchingPaneIndex = $0 ? index : nil }
+            ),
             onActivate: {
                 activePane = index
             },
@@ -1808,6 +1804,7 @@ struct ExplorerPaneView: View {
     let paneIndex: Int
     let isActive: Bool
     let showsActiveMarker: Bool
+    @Binding var showSearch: Bool
     let onActivate: () -> Void
     let onOpenFile: (ExplorerFileItem) -> Void
     let onRename: (ExplorerFileItem) -> Void
@@ -1848,7 +1845,6 @@ struct ExplorerPaneView: View {
     }
 
     @State private var isDropTargeted = false
-    @State private var showSearch = false
     @AppStorage("NikaidoExplorer.showMediaThumbnails")
     private var showMediaThumbnails = true
 
@@ -1890,114 +1886,34 @@ struct ExplorerPaneView: View {
         }
     }
 
+    // Un solo encabezado para cada panel: nombre/ruta sin botones duplicados.
     private var paneHeader: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                if pane.location?.kind == .authorized {
-                    Button {
-                        onActivate()
-                        onGoHome()
-                    } label: {
-                        Image(systemName: "house")
-                    }
-                    .buttonStyle(NikaidoIconButtonStyle())
-                    .accessibilityLabel("Inicio")
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            Text(pane.title)
+                .font(.title3.weight(.semibold))
+                .lineLimit(1)
+                .truncationMode(.middle)
 
-                if pane.canGoBack {
-                    Button {
-                        onActivate()
-                        pane.goBack()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                    }
-                    .buttonStyle(NikaidoIconButtonStyle())
-                    .accessibilityLabel("Atrás")
-                }
-
-                if pane.canGoForward {
-                    Button {
-                        onActivate()
-                        pane.goForward()
-                    } label: {
-                        Image(systemName: "chevron.right")
-                    }
-                    .buttonStyle(NikaidoIconButtonStyle())
-                    .accessibilityLabel("Adelante")
-                }
-
-                if pane.canGoUp {
-                    Button {
-                        onActivate()
-                        pane.goUp()
-                    } label: {
-                        Image(systemName: "arrow.up")
-                    }
-                    .buttonStyle(NikaidoIconButtonStyle())
-                    .accessibilityLabel("Subir una carpeta")
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(pane.title)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-
-                    Text(pane.relativePath)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.head)
-                }
-
-                Spacer(minLength: 0)
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showSearch.toggle()
-                    }
-                } label: {
-                    Image(systemName: showSearch ? "xmark" : "magnifyingglass")
-                }
-                .buttonStyle(NikaidoIconButtonStyle())
-                .accessibilityLabel("Buscar")
-
-                Button {
-                    pane.viewMode = pane.viewMode == .list
-                        ? .grid
-                        : .list
-                } label: {
-                    Image(systemName: pane.viewMode == .list
-                        ? "square.grid.2x2"
-                        : "list.bullet")
-                }
-                .buttonStyle(NikaidoIconButtonStyle())
-                .accessibilityLabel("Cambiar vista")
-
-                if pane.selectionMode {
-                    Button {
-                        pane.selectAll()
-                    } label: {
-                        Image(systemName: "checkmark.circle")
-                    }
-                    .buttonStyle(NikaidoIconButtonStyle())
-                    .accessibilityLabel("Seleccionar todo")
-                }
-            }
+            Text(pane.relativePath)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.head)
 
             if showSearch || !pane.search.isEmpty {
                 NikaidoSearchField(
                     text: $pane.search,
                     placeholder: "Buscar en este panel"
                 ) {
-                    Task {
-                        await pane.refresh()
-                    }
+                    Task { await pane.refresh() }
                 }
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
     }
 
     @ViewBuilder
