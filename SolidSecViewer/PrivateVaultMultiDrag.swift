@@ -13,7 +13,7 @@ final class PrivateVaultDragState: ObservableObject {
     @Published private(set) var isDragging = false
     @Published private(set) var count = 0
     @Published private(set) var highlightedKey: String?
-    @Published var pointer: CGPoint = .zero
+    let pointer = ExplorerDragPointer()
 
     private struct Target {
         weak var view: UIView?
@@ -37,7 +37,7 @@ final class PrivateVaultDragState: ObservableObject {
         self.originFolderID = originFolderID
         count = ids.count
         isDragging = true
-        pointer = point
+        pointer.location = point
         refreshTarget(point)
     }
 
@@ -127,6 +127,7 @@ extension View {
 
 struct PrivateVaultDragPreview: View {
     @ObservedObject var drag: PrivateVaultDragState
+    @ObservedObject var pointer: ExplorerDragPointer
     @Environment(\.nikaidoAccent) private var accent
 
     var body: some View {
@@ -149,8 +150,8 @@ struct PrivateVaultDragPreview: View {
                 .padding(.vertical, 7)
                 .background(.regularMaterial, in: Capsule())
                 .overlay(Capsule().stroke(accent.opacity(0.5), lineWidth: 1.5))
-                .position(x: drag.pointer.x - origin.x,
-                          y: drag.pointer.y - origin.y - 46)
+                .position(x: pointer.location.x - origin.x,
+                          y: pointer.location.y - origin.y - 46)
             }
         }
         .allowsHitTesting(false)
