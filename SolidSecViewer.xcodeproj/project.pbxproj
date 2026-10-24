@@ -60,6 +60,7 @@
         A932 /* NikaidoBinaryInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B932 /* NikaidoBinaryInspector.swift */; };
         A933 /* NikaidoBidirectionalSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = B933 /* NikaidoBidirectionalSync.swift */; };
         A970 /* TakopiOctopusMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = B970 /* TakopiOctopusMark.swift */; };
+        A972 /* PrivateVaultMultiDrag.swift in Sources */ = {isa = PBXBuildFile; fileRef = B972 /* PrivateVaultMultiDrag.swift */; };
         A971 /* ExplorerVaultSplitPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B971 /* ExplorerVaultSplitPane.swift */; };
         A960 /* ExplorerPackageBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B960 /* ExplorerPackageBrowser.swift */; };
         A934 /* NikaidoVideoCleanExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B934 /* NikaidoVideoCleanExporter.swift */; };
@@ -128,6 +129,7 @@
         B960 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerPackageBrowser.swift; sourceTree = "<group>"; };
         B970 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TakopiOctopusMark.swift; sourceTree = "<group>"; };
         B971 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerVaultSplitPane.swift; sourceTree = "<group>"; };
+        B972 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateVaultMultiDrag.swift; sourceTree = "<group>"; };
         B907 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultPhotoImport.swift; sourceTree = "<group>"; };
         B908 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoToolbox.swift; sourceTree = "<group>"; };
         B909 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NikaidoFolderTools.swift; sourceTree = "<group>"; };
@@ -176,7 +178,7 @@
         D002 = {
             isa = PBXGroup;
             children = (
-                B001, B002, B003, B004, B005, B006, B007, B008, B009, B010, B011, B012, B013, B014, B015, B016,  B018, B019, B020, B021, B022, B023, B024, B025, B026, B027, B028, B029, B030, B031, B032, B033, B034, B035, B036, B037, B038, B039, B040, B041, B042, B901, B902, B903, B904, B905, B906, B930, B931, B932, B933, B934, B960, B970, B971, B907, B908, B909, B910, B950,
+                B001, B002, B003, B004, B005, B006, B007, B008, B009, B010, B011, B012, B013, B014, B015, B016,  B018, B019, B020, B021, B022, B023, B024, B025, B026, B027, B028, B029, B030, B031, B032, B033, B034, B035, B036, B037, B038, B039, B040, B041, B042, B901, B902, B903, B904, B905, B906, B930, B931, B932, B933, B934, B960, B970, B971, B972, B907, B908, B909, B910, B950,
             );
             path = SolidSecViewer;
             sourceTree = "<group>";
@@ -255,7 +257,7 @@
         C002 = {
             isa = PBXSourcesBuildPhase;
             buildActionMask = 2147483647;
-            files = (A001,A002,A003,A004,A005,A006,A007,A008,A009,A010,A011,A012,A013,A014,A016,A018,A019,A020,A021,A022,A023,A024,A025,A026,A027,A028,A029,A032,A033,A034,A035,A036,A037,A038,A039,A040,A041,A042,A043,A044,A901,A902,A903,A904,A905,A906,A930,A931,A932,A933,A934,A960,A970,A971,A907,A908,A909,A910,);
+            files = (A001,A002,A003,A004,A005,A006,A007,A008,A009,A010,A011,A012,A013,A014,A016,A018,A019,A020,A021,A022,A023,A024,A025,A026,A027,A028,A029,A032,A033,A034,A035,A036,A037,A038,A039,A040,A041,A042,A043,A044,A901,A902,A903,A904,A905,A906,A930,A931,A932,A933,A934,A960,A970,A971,A972,A907,A908,A909,A910,);
             runOnlyForDeploymentPostprocessing = 0;
         };
 /* End PBXSourcesBuildPhase section */
@@ -349,12 +351,12 @@
             buildSettings = {
                 CODE_SIGN_STYLE = Automatic;
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-                CURRENT_PROJECT_VERSION = 50;
+                CURRENT_PROJECT_VERSION = 51;
                 EXECUTABLE_NAME = SolidSecViewer;
                 GENERATE_INFOPLIST_FILE = NO;
                 INFOPLIST_FILE = SolidSecViewer/Info.plist;
                 IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-                MARKETING_VERSION = 0.12.13;
+                MARKETING_VERSION = 0.12.14;
                 PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = YES;
@@ -369,12 +371,12 @@
             buildSettings = {
                 CODE_SIGN_STYLE = Automatic;
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-                CURRENT_PROJECT_VERSION = 50;
+                CURRENT_PROJECT_VERSION = 51;
                 EXECUTABLE_NAME = SolidSecViewer;
                 GENERATE_INFOPLIST_FILE = NO;
                 INFOPLIST_FILE = SolidSecViewer/Info.plist;
                 IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-                MARKETING_VERSION = 0.12.13;
+                MARKETING_VERSION = 0.12.14;
                 PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = YES;
