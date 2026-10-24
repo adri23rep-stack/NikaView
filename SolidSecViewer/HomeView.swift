@@ -218,7 +218,6 @@ struct HomeView: View {
                 .padding(.bottom, 24)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { homeBottomDock }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $tourSource) { source in
             HomeFolderTourView(source: source, locations: locations)
@@ -285,7 +284,11 @@ struct HomeView: View {
                     Label(pair.1.lastPathComponent, systemImage: "star.fill")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 14)
+                .background(Color(uiColor: .secondarySystemBackground),
+                            in: RoundedRectangle(cornerRadius: 14))
             }
             ForEach(recentFolders.prefix(4)) { item in
                 if let location = locations.locations.first(where: { $0.id == item.locationID }) {
@@ -298,7 +301,11 @@ struct HomeView: View {
                             Label(item.label, systemImage: "clock.arrow.circlepath")
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.plain)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 14)
+                .background(Color(uiColor: .secondarySystemBackground),
+                            in: RoundedRectangle(cornerRadius: 14))
                     }
                 }
             }
@@ -333,28 +340,6 @@ struct HomeView: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
-    }
-
-    private var homeBottomDock: some View {
-        HStack(spacing: 4) {
-            Button { onOpenExplorer(.files) } label: { Image(systemName: "folder") }
-                .accessibilityLabel("Archivos")
-            Button { tourSource = .iPhone } label: { Image(systemName: "plus") }
-                .accessibilityLabel("Añadir carpeta")
-            Button { onOpenVault() } label: { Image(systemName: "lock.shield") }
-                .accessibilityLabel("Takopi Vault")
-            Button {
-                showSettingsHint = false
-                onOpenExplorer(.settings)
-            } label: { Image(systemName: "gearshape") }
-                .accessibilityLabel("Ajustes")
-        }
-        .buttonStyle(NikaidoGlassActionStyle())
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .modifier(NikaidoGlassCapsule())
-        .padding(.horizontal, 20)
-        .padding(.bottom, 8)
     }
 
     private func ambientOrb(
@@ -523,10 +508,10 @@ struct HomeView: View {
                 )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("NikaView Files")
+                    Text("Takopi Files")
                         .font(.headline)
 
-                    Text("Las carpetas de NikaView")
+                    Text("Tus carpetas y archivos")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -539,24 +524,8 @@ struct HomeView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 82)
-            .background(
-                ZStack {
-                    Color(uiColor: .secondarySystemBackground)
-                }
-            )
-            .overlay(alignment: .topTrailing) {
-                Circle()
-                    .fill(nikaidoAccent.opacity(0.22))
-                    .frame(width: 92, height: 92)
-                    .offset(x: -40, y: -34)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(nikaidoAccent.opacity(0.22))
-                    .frame(width: 64, height: 64)
-                    .offset(x: -6, y: 28)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background(Color(uiColor: .secondarySystemBackground),
+                        in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .foregroundStyle(.primary)
         }
         .buttonStyle(NikaidoPressCardStyle())
@@ -617,10 +586,10 @@ struct HomeView: View {
                     .strokeBorder(.white.opacity(0.18), lineWidth: 1)
             }
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(alignment: .trailing) {
+            .overlay(alignment: .bottomTrailing) {
                 HomeVaultMelt(tint: nikaidoAccent, animated: motionEnabled)
-                    .frame(width: 52, height: 84)
-                    .offset(x: 13, y: 8)
+                    .frame(width: 48, height: 28)
+                    .offset(x: -12, y: 10)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
@@ -699,52 +668,30 @@ private struct HomeStorageCard: View {
 
     var body: some View {
         Button(action: action) {
-            ZStack(alignment: .topLeading) {
-                LinearGradient(
-                    colors: colors,
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-
-                Circle()
-                    .fill(Color.white.opacity(0.10))
-                    .frame(width: 120, height: 120)
-                    .offset(x: 80, y: -50)
-
-                Circle()
-                    .fill(Color.white.opacity(0.10))
-                    .frame(width: 36, height: 36)
-                    .offset(x: 104, y: 54)
-
+            VStack(alignment: .leading, spacing: 10) {
                 Image(systemName: symbol)
-                    .font(.system(size: 84, weight: .ultraLight))
-                    .foregroundStyle(Color.white.opacity(0.22))
-                    .offset(x: 84, y: 62)
+                    .font(.system(size: 23, weight: .medium))
+                    .foregroundStyle(colors.first ?? .blue)
+                    .frame(width: 44, height: 44)
+                    .background((colors.first ?? .blue).opacity(0.12),
+                                in: RoundedRectangle(cornerRadius: 13))
 
-                VStack(alignment: .leading, spacing: 0) {
-                    NikaidoFeatureMark(
-                        systemName: symbol,
-                        tint: .white,
-                        size: 42
-                    )
+                Spacer(minLength: 6)
 
-                    Spacer(minLength: 8)
+                Text(title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .lineLimit(2)
 
-                    Text(title)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Text(subtitle)
-                        .font(.footnote)
-                        .foregroundStyle(Color.white.opacity(0.92))
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
-            .frame(height: 140)
-            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 135)
+            .padding(15)
+            .foregroundStyle(.primary)
+            .background(Color(uiColor: .secondarySystemBackground),
+                        in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(NikaidoPressCardStyle())
     }
@@ -777,42 +724,29 @@ private struct HomeVaultMelt: View {
     }
 }
 
+/// Dos gotas pequeñas salen del borde inferior; nunca invaden el icono ni el texto.
 private struct HomeVaultMeltShape: Shape {
     var phase: CGFloat
 
     func path(in r: CGRect) -> Path {
-        let wave = CGFloat(sin(Double(phase) * 2.2)) * 4
-        let lower = CGFloat(sin(Double(phase) * 1.6 + 1.1)) * 4
+        let a = CGFloat(sin(Double(phase) * 1.7)) * 1.8
+        let b = CGFloat(sin(Double(phase) * 2.1 + 0.8)) * 1.8
         var p = Path()
-        p.move(to: CGPoint(x: r.minX, y: r.minY + 6))
-        p.addCurve(
-            to: CGPoint(x: r.maxX - 13, y: r.minY + 16),
-            control1: CGPoint(x: r.minX + 29, y: r.minY - 2),
-            control2: CGPoint(x: r.maxX - 17, y: r.minY + 5)
-        )
-        p.addCurve(
-            to: CGPoint(x: r.maxX - 5 + wave, y: r.minY + 39),
-            control1: CGPoint(x: r.maxX + wave, y: r.minY + 19),
-            control2: CGPoint(x: r.maxX + 7 + wave, y: r.minY + 33)
-        )
-        p.addCurve(
-            to: CGPoint(x: r.maxX - 17, y: r.minY + 60),
-            control1: CGPoint(x: r.maxX - 19, y: r.minY + 43),
-            control2: CGPoint(x: r.maxX - 3, y: r.minY + 54)
-        )
-        p.addCurve(
-            to: CGPoint(x: r.maxX - 12 + lower, y: r.maxY - 5),
-            control1: CGPoint(x: r.maxX - 33, y: r.minY + 66),
-            control2: CGPoint(x: r.maxX - 3 + lower, y: r.maxY - 22)
-        )
-        p.addQuadCurve(
-            to: CGPoint(x: r.minX + 16, y: r.maxY - 13),
-            control: CGPoint(x: r.maxX - 12, y: r.maxY + 10)
-        )
-        p.addQuadCurve(
-            to: CGPoint(x: r.minX, y: r.minY + 6),
-            control: CGPoint(x: r.minX - 7, y: r.midY)
-        )
+        p.move(to: CGPoint(x: r.minX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.minY + 6))
+        p.addCurve(to: CGPoint(x: r.maxX - 9, y: r.maxY - 9 + b),
+                   control1: CGPoint(x: r.maxX - 2, y: r.maxY - 1),
+                   control2: CGPoint(x: r.maxX - 12, y: r.maxY - 1))
+        p.addCurve(to: CGPoint(x: r.maxX - 20, y: r.minY + 7),
+                   control1: CGPoint(x: r.maxX - 7, y: r.minY + 9),
+                   control2: CGPoint(x: r.maxX - 18, y: r.minY + 5))
+        p.addCurve(to: CGPoint(x: r.minX + 13, y: r.maxY - 3 + a),
+                   control1: CGPoint(x: r.minX + 22, y: r.maxY - 2),
+                   control2: CGPoint(x: r.minX + 13, y: r.maxY + 3))
+        p.addCurve(to: CGPoint(x: r.minX + 3, y: r.minY + 6),
+                   control1: CGPoint(x: r.minX + 7, y: r.maxY - 2),
+                   control2: CGPoint(x: r.minX + 8, y: r.minY + 5))
         p.closeSubpath()
         return p
     }
