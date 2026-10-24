@@ -122,9 +122,11 @@ enum ExplorerPackageArchive {
         let zip = try ZIPFoundation.Archive(url: url, accessMode: .read)
         var entries: [Entry] = []
         entries.reserveCapacity(256)
+        var visited = 0
         for entry in zip {
             try Task.checkCancellation()
-            guard entries.count < maxEntries else {
+            visited += 1
+            guard visited <= maxEntries else {
                 throw ExplorerOperationError.tooManyArchiveEntries
             }
             guard entry.type != .symlink,
@@ -226,8 +228,11 @@ enum ExplorerPackageArchive {
             return score(a) > score(b)
         }
 
-        // Evitar recorrer un catálogo entero de imágenes buscando un icono.
-        for entry in ranked.prefix(16) {
+        // En paquetes enormes, no probamos 16 imágenes potencialmente
+        // grandes mientras el usuario ya navega las carpetas.
+        let isLarge = ((try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+            > 512 * 1024 * 1024
+        for entry in ranked.prefix(isLarge ? 3 : 16) {
             if let data = try? readSmall(entry, from: zip),
                let icon = UIImage(data: data), icon.size.width >= 32,
                icon.size.height >= 32 {
@@ -415,7 +420,7 @@ struct ExplorerPackageBrowserView: View {
                                     Text(entry.name).lineLimit(2)
                                     if !entry.directory {
                                         Text(ByteCountFormatter.string(
-                                            fromByteCount: Int64(entry.size),
+                                            fromByteCount: Int64(clamping: entry.size),
                                             countStyle: .file
                                         )).font(.caption2).foregroundStyle(.secondary)
                                     }
