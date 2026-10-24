@@ -168,7 +168,9 @@ struct ExplorerView: View {
                                 dragState: dragState,
                                 onOpenFullVault: onOpenVault,
                                 onSwitchToFiles: showTwoFilePanes,
-                                onFilesDropped: handleVaultDrop,
+                                onFilesDropped: { providers in
+                                    handleVaultDrop(providers)
+                                },
                                 onFilesDroppedToFolder: { providers, id in
                                     handleVaultDrop(providers, destinationFolderID: id)
                                 }
