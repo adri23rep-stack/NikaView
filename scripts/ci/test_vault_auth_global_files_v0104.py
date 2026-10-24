@@ -51,7 +51,7 @@ checks = {
     "drop onto added folders": "case location(ExplorerStorageLocation)" in drag and "destinationRoot:" in explorer,
     "home screen": "struct HomeView" in home and "mode: AppMode = .home" in content_view,
     "home tour + all folders": "struct HomeFolderTourView" in home and "struct HomeAllFoldersView" in home,
-    "home vault bubbles + logo hop": "HomeVaultBubbles" in home and "playLogoHop" in home and "HomeVaultBubbles(\n                    tint: .white" in home,
+    "home fluid Vault + logo hop": "HomeVaultMelt" in home and "playLogoHop" in home and "HomeVaultMeltShape" in home,
     "home categories filters": "case music" in global_files and "case packages" in global_files and "case documents" in global_files,
     "home registered": "HomeView.swift" in pbx,
     "vault unlock has two options": "unlockOptionCard" in vault and "passwordPanelVisible" in vault,

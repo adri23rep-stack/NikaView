@@ -461,7 +461,7 @@ struct PrivateVaultView: View {
                     .nikaidoField()
             }
 
-            Button(vault.hasVault ? "Desbloquear" : "Crear Nikaido Vault") {
+            Button(vault.hasVault ? "Desbloquear" : "Crear Takopi Vault") {
                 submitUnlockPassword()
             }
             .buttonStyle(NikaidoPrimaryButtonStyle())
@@ -524,7 +524,7 @@ struct PrivateVaultView: View {
                     )
                     .padding(.top, 8)
 
-                Text(vault.hasVault ? "Nikaido Vault" : "Crear Nikaido Vault")
+                Text(vault.hasVault ? "Nikaido Vault" : "Crear Takopi Vault")
                     .font(.title2.bold())
 
                 Text(

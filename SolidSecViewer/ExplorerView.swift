@@ -189,8 +189,8 @@ struct ExplorerView: View {
                 }
             }
             .background(Color(uiColor: .systemBackground))
-            .overlay(alignment: .bottomTrailing) {
-                floatingAddButton
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                explorerBottomDock
             }
             .overlay {
                 ExplorerDragGhostLayer(
@@ -591,36 +591,45 @@ struct ExplorerView: View {
         }
     }
 
+    // Solo ubicación y estado: nada de Liquid Glass arriba.
     private var explorerTopBar: some View {
-        HStack(spacing: 2) {
-            Button {
-                onOpenHome()
-            } label: {
-                NikaidoBrandMark(accent: nikaidoAccent, size: 32)
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(NikaidoPressCardStyle())
-            .accessibilityLabel("Inicio")
-
+        HStack(spacing: 10) {
             Button {
                 showStorageLocations = true
             } label: {
-                HStack(spacing: 5) {
-                    Text(
-                        active.location?.name
-                        ?? "Elegir almacenamiento"
-                    )
-                    .font(.title3.weight(.semibold))
-                    .lineLimit(1)
-
+                HStack(spacing: 6) {
+                    Text(active.location?.name ?? "Elegir almacenamiento")
+                        .font(.title3.weight(.semibold))
+                        .lineLimit(1)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.secondary)
+                        .font(.caption2.weight(.semibold))
                 }
                 .foregroundStyle(.primary)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Dispositivos de almacenamiento")
+
+            Spacer(minLength: 8)
+            if isOperating || operationQueue.isRunning {
+                ProgressView().controlSize(.small)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+
+    private var explorerBottomDock: some View {
+        HStack(spacing: 2) {
+            Button {
+                onOpenHome()
+            } label: {
+                Image(systemName: "house")
+                    .font(.system(size: 18))
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(NikaidoPressCardStyle())
+            .accessibilityLabel("Inicio")
+
 
             Spacer()
 
@@ -669,6 +678,8 @@ struct ExplorerView: View {
             }
             .buttonStyle(NikaidoIconButtonStyle(prominent: splitOpen))
             .accessibilityLabel(splitOpen ? "Cerrar segundo panel" : "Abrir segundo panel")
+
+            floatingAddButton
 
             Menu {
                 Button {
@@ -909,9 +920,8 @@ struct ExplorerView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .modifier(NikaidoGlassCapsule())
-        .padding(.horizontal, 12)
-        .padding(.top, 6)
-        .padding(.bottom, 4)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
     }
 
     /// Abre la carpeta de origen de un resultado del filtro global.
@@ -1342,8 +1352,7 @@ struct ExplorerView: View {
         }
         .disabled(!canCreate)
         .opacity(canCreate ? 1 : 0.4)
-        .padding(.trailing, 18)
-        .padding(.bottom, active.selectionMode ? 74 : 18)
+        .padding(.horizontal, 3)
     }
 
     private func createNewItem() {
