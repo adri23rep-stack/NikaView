@@ -18,7 +18,7 @@ struct PrivateVaultEntry: Identifiable, Codable, Hashable, Sendable {
     // of one complete AES-GCM "combined" frame (nonce + ciphertext + tag) in
     // its expected ordinal position. Missing in older vault indexes by design.
     //
-    // Existing blobs never need to be rewritten. For an old video, Nikaido Explorer
+    // Existing blobs never need to be rewritten. For an old video, Takopi Explorer
     // verifies the whole blob once, then stores only this small manifest inside
     // the already-encrypted index.
     var blobChunkSHA256: [Data]? = nil
@@ -64,3 +64,4 @@ struct PrivateVaultConfig: Codable, Sendable {
     let salt: Data
     let verifier: Data
 }
+

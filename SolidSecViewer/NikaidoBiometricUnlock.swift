@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import LocalAuthentication
 import Security
 
-/// Cómo quiere el usuario desbloquear Nikaido Vault.
+/// Cómo quiere el usuario desbloquear Takopi Vault.
 /// - Primera vez: siempre contraseña.
 /// - Después de entrar, la app pregunta una sola vez: Face ID o contraseña.
 enum NikaidoUnlockMethod: String {
@@ -99,7 +99,7 @@ enum NikaidoUnlockPreference {
             let context = LAContext()
             context.evaluatePolicy(
                 .deviceOwnerAuthenticationWithBiometrics,
-                localizedReason: "Activar Face ID para Nikaido Vault"
+                localizedReason: "Activar Face ID para Takopi Vault"
             ) { success, error in
                 if success {
                     continuation.resume(returning: nil)
@@ -344,3 +344,4 @@ enum NikaidoSecFaceID {
         Set(UserDefaults.standard.stringArray(forKey: storeKey) ?? [])
     }
 }
+

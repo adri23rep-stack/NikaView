@@ -19,7 +19,7 @@ enum StoredSecVideoError: Error, LocalizedError {
         case .badSecHeader:
             return "La cabecera cifrada del video .sec no coincide con la colección."
         case .unsupportedRange:
-            return "El reproductor pidió un rango que Nikaido Explorer no puede representar."
+            return "El reproductor pidió un rango que Takopi Explorer no puede representar."
         case .invalidRequest:
             return "AVPlayer solicitó un rango inválido."
         case .thumbnailGenerationFailed:
@@ -496,3 +496,4 @@ final class StoredSecVideoPlayback: Identifiable {
         loader.invalidate()
     }
 }
+

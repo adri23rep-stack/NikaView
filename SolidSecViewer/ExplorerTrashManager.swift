@@ -162,7 +162,7 @@ struct ExplorerTrashView: View {
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
                         Text("Papelera vacía").font(.headline)
-                        Text("Los archivos eliminados por Nikaido Explorer aparecerán aquí.")
+                        Text("Los archivos eliminados por Takopi Explorer aparecerán aquí.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -199,3 +199,4 @@ struct ExplorerTrashView: View {
         }
     }
 }
+

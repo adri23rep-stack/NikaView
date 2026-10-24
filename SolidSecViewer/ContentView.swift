@@ -130,11 +130,11 @@ struct ContentView: View {
             showIncomingChooser = true
         }
         .confirmationDialog(
-            "Importar documento a NikaView",
+            "Importar documento a Takopi",
             isPresented: $showIncomingChooser,
             titleVisibility: .visible
         ) {
-            Button("Guardar en NikaView Files") {
+            Button("Guardar en Takopi Files") {
                 importIncomingDocument(intoVault: false)
             }
             if privateVault.isUnlocked {
@@ -254,7 +254,7 @@ struct ContentView: View {
         } message: {
             Text(
                 "iOS avisa a la app después de hacer una captura. "
-                + "Nikaido Explorer bloqueó las bóvedas inmediatamente, pero no puede "
+                + "Takopi Explorer bloqueó las bóvedas inmediatamente, pero no puede "
                 + "borrar una captura que el sistema ya guardó."
             )
         }
@@ -292,7 +292,7 @@ struct ContentView: View {
                         into: location.rootURL,
                         root: location.rootURL
                     )
-                    incomingNotice = "Documento copiado a NikaView Files."
+                    incomingNotice = "Documento copiado a Takopi Files."
                 }
             } catch {
                 incomingNotice = "No se pudo importar: \(error.localizedDescription)"
@@ -385,7 +385,7 @@ struct ContentView: View {
             Text("Takopi Explorer")
                 .font(.largeTitle.bold())
 
-            Text("Privacidad, multimedia y Nikaido Vault")
+            Text("Privacidad, multimedia y Takopi Vault")
                 .foregroundStyle(.secondary)
 
             Button {
@@ -516,8 +516,8 @@ struct ContentView: View {
 
                 if selectedZipSourceURL != nil {
                     Text(
-                        "Para guardar colecciones grandes en Nikaido Vault sin duplicar "
-                        + "12–24 GB temporales, usa Nikaido Vault → Wi‑Fi → Recibir .sec "
+                        "Para guardar colecciones grandes en Takopi Vault sin duplicar "
+                        + "12–24 GB temporales, usa Takopi Vault → Wi‑Fi → Recibir .sec "
                         + "desde PC. Nikaido Link guarda solo los archivos .sec cifrados."
                     )
                     .font(.caption)
@@ -543,7 +543,7 @@ struct ContentView: View {
             .buttonStyle(.bordered)
 
             Text(
-                "El ZIP puede contener otras carpetas: Nikaido Explorer busca automáticamente "
+                "El ZIP puede contener otras carpetas: Takopi Explorer busca automáticamente "
                 + "la mejor carpeta .sec y extrae únicamente ese subárbol. "
                 + "La selección directa de carpetas se conserva como alternativa."
             )
@@ -652,3 +652,4 @@ struct ContentView: View {
         }
     }
 }
+

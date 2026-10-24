@@ -63,7 +63,7 @@ if "@State private var mode: AppMode = .home" not in content or "case .explorer:
 for required in (
     "Dispositivos de almacenamiento",
     "Acceso directo a la raíz",
-    "Nikaido Vault",
+    "Takopi Vault",
     "Copiar al otro panel",
     "Mover al otro panel",
     "Nueva carpeta",
@@ -117,3 +117,4 @@ for needle in dangerous:
         fail("se intentó convertir Raíz en acceso real a / de iOS")
 
 print("EXPLORER CORE V0.9.0: OK")
+

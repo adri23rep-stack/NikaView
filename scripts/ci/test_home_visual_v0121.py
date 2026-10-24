@@ -16,22 +16,23 @@ checks = {
     "hint not persistently suppressed": "nikaido.settingsHintAlreadyTapped" not in home,
     "intro task cancelled on leave": "homeIntroTask?.cancel()" in home,
     "original hop kept": "await playLogoHop()" in home,
-    "living background has 6 orbs": home.count("ambientOrb(") >= 7 and "repeatForever(autoreverses: true)" in home,
+    "living background has 6 orbs": home.count("ambientOrb(") >= 7 and "sin(time * .pi / seconds" in home,
     "Reduce Motion respected": "accessibilityReduceMotion" in home and "motionEnabled" in home,
     "Reduce Transparency respected": "accessibilityReduceTransparency" in home and "if !reduceTransparency" in home,
     "Low Power Mode respected": "isLowPowerModeEnabled" in home,
     "vault still opens": "onOpenVault()" in home,
     "no glass dock on Home": "homeBottomDock" not in home and ".safeAreaInset(edge: .bottom" not in home,
-    "subtle liquid drips": "HomeVaultMelt(" in home and ".offset(x: -12, y: 10)" in home,
+    "no protruding drips": "HomeVaultGlow(" in home and "HomeVaultMelt" not in home,
     "Vault text clear": 'Text("Takopi Vault")' in home,
-    "fluid shape animates": "HomeVaultMeltShape(phase:" in home and "sin(Double(phase)" in home,
+    "fluid shape animates": "HomeVaultGlow" in home and "sin(time * 1.2)" in home,
     "fluid shape remains moving": "minimumInterval: 1.0 / 20.0" in home,
     "vault animations pause in low power mode": "animated: motionEnabled" in home and "isLowPowerModeEnabled" in home,
-    "melt remains visible without animation": "melt(at: 0)" in home,
+    "glow pauses without animation": "paused: !animated" in home,
     "no fake bubbles": "HomeVaultBubbles" not in home,
-    "version v0.12.6": pbx.count("MARKETING_VERSION = 0.12.6;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 43;") == 2,
+    "version v0.12.7": pbx.count("MARKETING_VERSION = 0.12.7;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 44;") == 2,
 }
 for name, ok in checks.items():
     print(("OK " if ok else "FAIL ") + name)
 if not all(checks.values()):
     sys.exit(1)
+

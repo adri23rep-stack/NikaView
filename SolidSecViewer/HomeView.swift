@@ -110,7 +110,7 @@ enum HomeTourSource: String, Identifiable {
     var intro: String {
         switch self {
         case .iCloud:
-            return "NikaView solo puede abrir las carpetas que tú elijas. Te guiamos en tres pasos."
+            return "Takopi Explorer solo puede abrir las carpetas que tú elijas. Te guiamos en tres pasos."
         case .iPhone:
             return "Solo se pueden añadir carpetas que tú elijas en Archivos. Las del sistema y las de otras apps no están permitidas."
         }
@@ -186,11 +186,11 @@ struct HomeView: View {
 
     @State private var logoOffset: CGFloat = 0
     @State private var showSettingsHint = false
-    @State private var lavaDrift = false
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showHomeContent = false
 
     private var motionEnabled: Bool {
-        !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
+        !reduceMotion && scenePhase == .active && !ProcessInfo.processInfo.isLowPowerModeEnabled
     }
     @State private var tourSource: HomeTourSource?
     @State private var showAllFolders = false
@@ -232,7 +232,6 @@ struct HomeView: View {
             recentFolders = NikaidoRecents.all
             showHomeContent = false
             DispatchQueue.main.async { showHomeContent = true }
-            lavaDrift = !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
 
             // Repeat the little greeting whenever Home appears, not just on
             // the first launch. Never persistently suppress the speech bubble.
@@ -253,7 +252,6 @@ struct HomeView: View {
             homeIntroTask?.cancel()
             homeIntroTask = nil
             logoOffset = 0
-            lavaDrift = false
             showSettingsHint = false
             showHomeContent = false
         }
@@ -316,26 +314,30 @@ struct HomeView: View {
 
     private var background: some View {
         GeometryReader { proxy in
-            ZStack {
+            TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: !motionEnabled)) { timeline in
+                let time = motionEnabled ? timeline.date.timeIntervalSinceReferenceDate : 0
+                ZStack {
                 Color(uiColor: .systemBackground)
 
                 // Seis orbes suaves; se suspenden con Reducir movimiento y Bajo consumo.
                 if !reduceTransparency {
                     ambientOrb(.mint.opacity(0.21), diameter: 340, blur: 65,
-                        from: [-0.42, -0.2], to: [0.04, 0.18], seconds: 13, bounds: proxy.size)
+                        from: [-0.42, -0.2], to: [0.04, 0.18], seconds: 13, bounds: proxy.size, time: time)
                     ambientOrb(.blue.opacity(0.16), diameter: 380, blur: 76,
-                        from: [0.42, 0.36], to: [0.1, -0.23], seconds: 17, bounds: proxy.size)
+                        from: [0.42, 0.36], to: [0.1, -0.23], seconds: 17, bounds: proxy.size, time: time)
                     ambientOrb(nikaidoAccent.opacity(0.18), diameter: 290, blur: 65,
-                        from: [0.26, -0.3], to: [-0.35, 0.05], seconds: 11, bounds: proxy.size)
+                        from: [0.26, -0.3], to: [-0.35, 0.05], seconds: 11, bounds: proxy.size, time: time)
                     ambientOrb(.cyan.opacity(0.11), diameter: 220, blur: 47,
-                        from: [-0.34, 0.48], to: [0.28, 0.14], seconds: 15, bounds: proxy.size)
+                        from: [-0.34, 0.48], to: [0.28, 0.14], seconds: 15, bounds: proxy.size, time: time)
                     ambientOrb(.purple.opacity(0.13), diameter: 200, blur: 46,
-                        from: [0.3, 0.55], to: [-0.24, -0.31], seconds: 19, bounds: proxy.size)
+                        from: [0.3, 0.55], to: [-0.24, -0.31], seconds: 19, bounds: proxy.size, time: time)
                     ambientOrb(.indigo.opacity(0.10), diameter: 260, blur: 58,
-                        from: [0.12, -0.45], to: [-0.3, 0.37], seconds: 14, bounds: proxy.size)
+                        from: [0.12, -0.45], to: [-0.3, 0.37], seconds: 14, bounds: proxy.size, time: time)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
+            .clipped()
+            }
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
@@ -349,20 +351,19 @@ struct HomeView: View {
         from: [CGFloat],
         to: [CGFloat],
         seconds: Double,
-        bounds: CGSize
+        bounds: CGSize,
+        time: TimeInterval
     ) -> some View {
-        Circle()
+        let progress = CGFloat((sin(time * .pi / seconds + seconds) + 1) / 2)
+        return Circle()
             .fill(tint)
             .frame(width: diameter, height: diameter)
             .blur(radius: blur)
             .offset(
-                x: (lavaDrift ? to[0] : from[0]) * bounds.width,
-                y: (lavaDrift ? to[1] : from[1]) * bounds.height
+                x: (from[0] + (to[0] - from[0]) * progress) * bounds.width,
+                y: (from[1] + (to[1] - from[1]) * progress) * bounds.height
             )
-            .animation(
-                motionEnabled ? .easeInOut(duration: seconds).repeatForever(autoreverses: true) : nil,
-                value: lavaDrift
-            )
+
     }
 
     // MARK: Encabezado
@@ -559,7 +560,6 @@ struct HomeView: View {
 
                 Spacer(minLength: 2)
 
-                // El remate fundido sobresale del borde, sin tapar el título.
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
@@ -585,14 +585,12 @@ struct HomeView: View {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .strokeBorder(.white.opacity(0.18), lineWidth: 1)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(alignment: .bottomTrailing) {
-                HomeVaultMelt(tint: nikaidoAccent, animated: motionEnabled)
-                    .frame(width: 48, height: 28)
-                    .offset(x: -12, y: 10)
+            .overlay {
+                HomeVaultGlow(animated: motionEnabled)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .shadow(color: nikaidoAccent.opacity(0.12), radius: 8, y: 4)
         }
         .buttonStyle(NikaidoPressCardStyle())
@@ -697,58 +695,22 @@ private struct HomeStorageCard: View {
     }
 }
 
-// MARK: - Borde orgánico que sobresale de Takopi Vault
+// MARK: - Luz suave, contenida dentro de la tarjeta
 
-private struct HomeVaultMelt: View {
-    let tint: Color
+private struct HomeVaultGlow: View {
     let animated: Bool
 
     var body: some View {
-        Group {
-            if animated {
-                TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { timeline in
-                    melt(at: timeline.date.timeIntervalSinceReferenceDate)
-                }
-            } else {
-                melt(at: 0)
-            }
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: !animated)) { timeline in
+            let time = animated ? timeline.date.timeIntervalSinceReferenceDate : 0
+            let pulse = (sin(time * 1.2) + 1) / 2
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(colors: [.white.opacity(0.08), .white.opacity(0.22 + pulse * 0.20), .clear],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 1.5
+                )
         }
-    }
-
-    private func melt(at time: TimeInterval) -> some View {
-        HomeVaultMeltShape(phase: CGFloat(time))
-            .fill(LinearGradient(
-                colors: [tint.nikaidoDarkened(0.85), tint.nikaidoDarkened(0.68)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-    }
-}
-
-/// Dos gotas pequeñas salen del borde inferior; nunca invaden el icono ni el texto.
-private struct HomeVaultMeltShape: Shape {
-    var phase: CGFloat
-
-    func path(in r: CGRect) -> Path {
-        let a = CGFloat(sin(Double(phase) * 1.7)) * 1.8
-        let b = CGFloat(sin(Double(phase) * 2.1 + 0.8)) * 1.8
-        var p = Path()
-        p.move(to: CGPoint(x: r.minX, y: r.minY))
-        p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
-        p.addLine(to: CGPoint(x: r.maxX, y: r.minY + 6))
-        p.addCurve(to: CGPoint(x: r.maxX - 9, y: r.maxY - 9 + b),
-                   control1: CGPoint(x: r.maxX - 2, y: r.maxY - 1),
-                   control2: CGPoint(x: r.maxX - 12, y: r.maxY - 1))
-        p.addCurve(to: CGPoint(x: r.maxX - 20, y: r.minY + 7),
-                   control1: CGPoint(x: r.maxX - 7, y: r.minY + 9),
-                   control2: CGPoint(x: r.maxX - 18, y: r.minY + 5))
-        p.addCurve(to: CGPoint(x: r.minX + 13, y: r.maxY - 3 + a),
-                   control1: CGPoint(x: r.minX + 22, y: r.maxY - 2),
-                   control2: CGPoint(x: r.minX + 13, y: r.maxY + 3))
-        p.addCurve(to: CGPoint(x: r.minX + 3, y: r.minY + 6),
-                   control1: CGPoint(x: r.minX + 7, y: r.maxY - 2),
-                   control2: CGPoint(x: r.minX + 8, y: r.minY + 5))
-        p.closeSubpath()
-        return p
     }
 }
 
@@ -1348,3 +1310,4 @@ private extension View {
         modifier(NikaidoHomeEntrance(visible: visible, enabled: enabled, delay: delay))
     }
 }
+

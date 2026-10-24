@@ -6,7 +6,7 @@ enum NikaidoVaultMigrationError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .futureVersion(let version):
-            return "Nikaido Vault usa una versión futura (\(version)). "
+            return "Takopi Vault usa una versión futura (\(version)). "
                 + "Esta app no modificará sus datos."
         }
     }
@@ -23,3 +23,4 @@ enum NikaidoVaultMigration {
         }
     }
 }
+

@@ -548,7 +548,7 @@ enum ExplorerArchiveManager {
 
         guard values.isSymbolicLink != true else {
             throw ExplorerOperationError.operationFailed(
-                "Nikaido no comprime enlaces simbólicos por seguridad: "
+                "Takopi no comprime enlaces simbólicos por seguridad: "
                 + url.lastPathComponent
             )
         }
@@ -787,3 +787,4 @@ enum ExplorerArchiveManager {
         return formatter.string(from: Date())
     }
 }
+

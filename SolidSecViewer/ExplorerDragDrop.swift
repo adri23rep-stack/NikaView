@@ -2,7 +2,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 extension UTType {
-    /// Tipo propio de Nikaido Explorer. Ya no se usa para arrastrar porque un
+    /// Tipo propio de Takopi Explorer. Ya no se usa para arrastrar porque un
     /// tipo personalizado no se registra cuando la app corre dentro de
     /// LiveContainer; se conserva declarado en Info.plist por compatibilidad.
     static let nikaidoExplorerItems = UTType(exportedAs: "com.teamnikaido.explorer-items")
@@ -37,7 +37,7 @@ struct ExplorerDragPayload: Codable {
         guard let provider = providers.first(where: {
             $0.canLoadObject(ofClass: NSString.self)
         }) else {
-            throw ExplorerOperationError.operationFailed("El elemento arrastrado no pertenece a Nikaido Explorer.")
+            throw ExplorerOperationError.operationFailed("El elemento arrastrado no pertenece a Takopi Explorer.")
         }
 
         let text: String = try await withCheckedThrowingContinuation { continuation in
@@ -61,7 +61,7 @@ struct ExplorerDragPayload: Codable {
         let prefix = marker + ":"
 
         guard text.hasPrefix(prefix) else {
-            throw ExplorerOperationError.operationFailed("El elemento arrastrado no pertenece a Nikaido Explorer.")
+            throw ExplorerOperationError.operationFailed("El elemento arrastrado no pertenece a Takopi Explorer.")
         }
 
         let token = String(text.dropFirst(prefix.count))
@@ -80,3 +80,4 @@ struct ExplorerDragPayload: Codable {
         return payload
     }
 }
+

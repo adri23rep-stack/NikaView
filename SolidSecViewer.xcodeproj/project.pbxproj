@@ -343,12 +343,12 @@
             buildSettings = {
                 CODE_SIGN_STYLE = Automatic;
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-                CURRENT_PROJECT_VERSION = 43;
+                CURRENT_PROJECT_VERSION = 44;
                 EXECUTABLE_NAME = SolidSecViewer;
                 GENERATE_INFOPLIST_FILE = NO;
                 INFOPLIST_FILE = SolidSecViewer/Info.plist;
                 IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-                MARKETING_VERSION = 0.12.6;
+                MARKETING_VERSION = 0.12.7;
                 PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = YES;
@@ -363,12 +363,12 @@
             buildSettings = {
                 CODE_SIGN_STYLE = Automatic;
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-                CURRENT_PROJECT_VERSION = 43;
+                CURRENT_PROJECT_VERSION = 44;
                 EXECUTABLE_NAME = SolidSecViewer;
                 GENERATE_INFOPLIST_FILE = NO;
                 INFOPLIST_FILE = SolidSecViewer/Info.plist;
                 IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-                MARKETING_VERSION = 0.12.6;
+                MARKETING_VERSION = 0.12.7;
                 PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = YES;
@@ -397,3 +397,4 @@
     };
     rootObject = P001;
 }
+

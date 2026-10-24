@@ -301,7 +301,7 @@ final class SecurityScopedFolderStore: ObservableObject {
         locations = [
             ExplorerStorageLocation(
                 id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
-                name: "Nikaido Explorer",
+                name: "Takopi Explorer",
                 rootURL: documents.standardizedFileURL,
                 kind: .local,
                 isPersistentReference: true
@@ -545,3 +545,4 @@ final class SecurityScopedFolderStore: ObservableObject {
             candidate.path.hasPrefix(rootPath)
     }
 }
+

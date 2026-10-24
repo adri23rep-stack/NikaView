@@ -433,7 +433,7 @@ struct NikaidoTextVersions: View {
     var body: some View {
         List {
             Section {
-                Text("Se guarda una versión local antes de cada cambio desde el editor de NikaView (máximo 10). No se sincroniza a iCloud.")
+                Text("Se guarda una versión local antes de cada cambio desde el editor de Takopi Explorer (máximo 10). No se sincroniza a iCloud.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Versiones guardadas") {
@@ -460,3 +460,4 @@ struct NikaidoTextVersions: View {
         }
     }
 }
+

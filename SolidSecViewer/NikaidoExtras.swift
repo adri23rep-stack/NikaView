@@ -725,7 +725,7 @@ struct NikaidoStorageSettingsSection: View {
                 }
 
             usageRow("Bóveda cifrada", vaultBytes)
-            usageRow("Archivos locales de Nikaido", localBytes)
+            usageRow("Archivos locales de Takopi", localBytes)
             usageRow("Libre en el iPhone", freeBytes)
 
             Picker("Avisar si la papelera pasa de", selection: $trashWarnMB) {
@@ -838,3 +838,4 @@ enum ExplorerErrorText {
         return error.localizedDescription
     }
 }
+

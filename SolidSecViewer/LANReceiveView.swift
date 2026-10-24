@@ -163,7 +163,7 @@ struct LANReceiveView: View {
                 }
 
                 Text(
-                    "Mantén Nikaido Explorer abierto y ambos equipos en la misma red "
+                    "Mantén Takopi Explorer abierto y ambos equipos en la misma red "
                     + "Wi‑Fi hasta terminar."
                 )
                 .font(.caption)
@@ -193,13 +193,13 @@ struct LANReceiveView: View {
             Text(
                 "Solo los archivos cifrados de formato .sec quedaron "
                 + "almacenados, cada uno además protegido por AES‑256‑GCM "
-                + "de Nikaido Vault."
+                + "de Takopi Vault."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
 
-            Button("Volver a Nikaido Vault") {
+            Button("Volver a Takopi Vault") {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
@@ -257,3 +257,4 @@ struct LANReceiveView: View {
         return "\(received) / \(expected) • \(Int(receiver.progress * 100))%"
     }
 }
+

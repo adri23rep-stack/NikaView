@@ -222,7 +222,7 @@ struct PrivateVaultView: View {
             showLANReceiver = false
         }
         .alert(
-            "¿Cómo quieres desbloquear Nikaido Vault?",
+            "¿Cómo quieres desbloquear Takopi Vault?",
             isPresented: $showUnlockMethodChoice
         ) {
             Button("Face ID") {
@@ -233,10 +233,10 @@ struct PrivateVaultView: View {
                 choosePassword()
             }
         } message: {
-            Text("Con Face ID, Nikaido guarda tu contraseña cifrada y oculta en el Llavero de este iPhone, protegida por Face ID, y la usa por ti. Puedes cambiarlo desde el menú de la bóveda.")
+            Text("Con Face ID, Takopi guarda tu contraseña cifrada y oculta en el Llavero de este iPhone, protegida por Face ID, y la usa por ti. Puedes cambiarlo desde el menú de la bóveda.")
         }
         .alert(
-            "Nikaido Vault",
+            "Takopi Vault",
             isPresented: Binding(
                 get: { methodNotice != nil },
                 set: { if !$0 { methodNotice = nil } }
@@ -252,7 +252,7 @@ struct PrivateVaultView: View {
             "Confirma tu identidad",
             isPresented: $showFilePasswordPrompt
         ) {
-            SecureField("Contraseña de Nikaido Vault", text: $filePasswordText)
+            SecureField("Contraseña de Takopi Vault", text: $filePasswordText)
 
             Button("Abrir") {
                 submitFilePassword()
@@ -266,11 +266,11 @@ struct PrivateVaultView: View {
         } message: {
             Text(
                 filePasswordError
-                ?? "Escribe la contraseña de Nikaido Vault para abrir este archivo."
+                ?? "Escribe la contraseña de Takopi Vault para abrir este archivo."
             )
         }
         .alert(
-            "Guardado en Nikaido Explorer",
+            "Guardado en Takopi Explorer",
             isPresented: Binding(
                 get: { explorerNotice != nil },
                 set: { if !$0 { explorerNotice = nil } }
@@ -524,7 +524,7 @@ struct PrivateVaultView: View {
                     )
                     .padding(.top, 8)
 
-                Text(vault.hasVault ? "Nikaido Vault" : "Crear Takopi Vault")
+                Text(vault.hasVault ? "Takopi Vault" : "Crear Takopi Vault")
                     .font(.title2.bold())
 
                 Text(
@@ -669,7 +669,7 @@ struct PrivateVaultView: View {
 
         Task {
             let result = await NikaidoUnlockPreference.loadPassword(
-                reason: "Desbloquear Nikaido Vault"
+                reason: "Desbloquear Takopi Vault"
             )
 
             switch result {
@@ -757,7 +757,7 @@ struct PrivateVaultView: View {
         .searchable(
             text: $vaultSearch,
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: "Buscar en Nikaido Vault"
+            prompt: "Buscar en Takopi Vault"
         )
     }
 
@@ -858,7 +858,7 @@ struct PrivateVaultView: View {
                     showDiagnostics = true
                 } label: {
                     Label(
-                        "Diagnóstico de Nikaido Vault",
+                        "Diagnóstico de Takopi Vault",
                         systemImage: "stethoscope"
                     )
                 }
@@ -1047,7 +1047,7 @@ struct PrivateVaultView: View {
                     }
                 } label: {
                     Label(
-                        "Guardar en Nikaido Explorer",
+                        "Guardar en Takopi Explorer",
                         systemImage: "square.and.arrow.down.on.square"
                     )
                 }
@@ -1207,12 +1207,12 @@ struct PrivateVaultView: View {
             return
         }
 
-        protectedOpen("Mostrar miniaturas de Nikaido Vault") {
+        protectedOpen("Mostrar miniaturas de Takopi Vault") {
             thumbnailsRevealed = true
         }
     }
 
-    /// Descifra una copia y la guarda en la carpeta local de Nikaido Explorer.
+    /// Descifra una copia y la guarda en la carpeta local de Takopi Explorer.
     @MainActor
     private func saveToExplorer(_ entry: PrivateVaultEntry) async {
         guard !isPreparingExport else { return }
@@ -1460,7 +1460,7 @@ struct NikaidoMoveDestinationView: View {
                         dismiss()
                     } label: {
                         Label(
-                            "Raíz de Nikaido Vault",
+                            "Raíz de Takopi Vault",
                             systemImage: "externaldrive.fill"
                         )
                     }
@@ -1590,7 +1590,7 @@ struct NikaidoVaultDiagnosticsView: View {
                     .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Nikaido Vault")
+            .navigationTitle("Takopi Vault")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cerrar") {
@@ -1845,3 +1845,4 @@ struct PrivateVaultMediaViewer: View {
         }
     }
 }
+

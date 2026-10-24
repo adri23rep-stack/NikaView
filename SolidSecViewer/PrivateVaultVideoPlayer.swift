@@ -15,7 +15,7 @@ enum PrivateVaultVideoError: Error, LocalizedError {
         case .thumbnailGenerationFailed:
             return "No se pudo generar una miniatura para este video."
         case .sourceInvalidated:
-            return "La sesión de video de Nikaido Vault ya fue cerrada."
+            return "La sesión de video de Takopi Vault ya fue cerrada."
         }
     }
 }
@@ -380,3 +380,4 @@ final class PrivateVaultVideoPlayback: Identifiable {
         loader.invalidate()
     }
 }
+

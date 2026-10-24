@@ -59,7 +59,7 @@ struct NikaidoToolboxView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Herramientas NikaView")
+            .navigationTitle("Herramientas Takopi")
             .toolbar { Button("Cerrar") { dismiss() } }
             .sheet(item: $tool) { value in
                 NavigationStack {
@@ -327,3 +327,4 @@ enum NikaidoFileEnumerator {
         return paths
     }
 }
+

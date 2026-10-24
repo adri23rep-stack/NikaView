@@ -59,7 +59,7 @@ for required in (
 
 for source, name in (
     (direct_video, "direct .sec"),
-    (private_video, "Nikaido Vault"),
+    (private_video, "Takopi Vault"),
 ):
     for required in (
         "AVAssetImageGenerator",
@@ -81,7 +81,7 @@ if "item.isVideo" not in direct_thumb or "makeVideoThumbnailData" not in direct_
 for source, name in (
     (video, "stored .sec"),
     (direct_video, "direct .sec"),
-    (private_video, "Nikaido Vault"),
+    (private_video, "Takopi Vault"),
 ):
     for forbidden in (
         "temporaryDirectory",
@@ -100,3 +100,4 @@ if "let worker: Task<Data?, Never> = Task.detached" not in vault:
     fail("thumbnail cache worker lost explicit Data? task typing")
 
 print("VIDEO THUMBNAIL GUARD: OK")
+

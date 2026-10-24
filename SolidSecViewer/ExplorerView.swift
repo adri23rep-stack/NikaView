@@ -308,7 +308,7 @@ struct ExplorerView: View {
 
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Desbloquea Nikaido Vault y vuelve a intentarlo. Los archivos se cifran dentro de la bóveda.")
+            Text("Desbloquea Takopi Vault y vuelve a intentarlo. Los archivos se cifran dentro de la bóveda.")
         }
         .confirmationDialog(
             "Mover a la bóveda",
@@ -484,7 +484,7 @@ struct ExplorerView: View {
             }
         } message: {
             Text(
-                "Los elementos seleccionados se moverán a la Papelera de Nikaido. "
+                "Los elementos seleccionados se moverán a la Papelera de Takopi. "
                 + "Podrás restaurarlos o deshacer la última eliminación."
             )
         }
@@ -1850,9 +1850,9 @@ struct ExplorerPaneView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            paneHeader
-
-            Divider()
+            if showSearch || !pane.search.isEmpty {
+                paneHeader
+            }
 
             if pane.isLoading && pane.items.isEmpty {
                 Spacer()
@@ -1889,17 +1889,6 @@ struct ExplorerPaneView: View {
     // Un solo encabezado para cada panel: nombre/ruta sin botones duplicados.
     private var paneHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(pane.title)
-                .font(.title3.weight(.semibold))
-                .lineLimit(1)
-                .truncationMode(.middle)
-
-            Text(pane.relativePath)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.head)
-
             if showSearch || !pane.search.isEmpty {
                 NikaidoSearchField(
                     text: $pane.search,
@@ -2999,3 +2988,4 @@ private struct ExplorerPreviewTarget: Identifiable {
     let id = UUID()
     let url: URL
 }
+

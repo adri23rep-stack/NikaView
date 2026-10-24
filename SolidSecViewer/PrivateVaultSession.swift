@@ -69,9 +69,9 @@ enum PrivateVaultError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyExists:
-            return "La Nikaido Vault ya existe."
+            return "La Takopi Vault ya existe."
         case .notCreated:
-            return "Todavía no existe una Nikaido Vault."
+            return "Todavía no existe una Takopi Vault."
         case .wrongPassword:
             return "Contraseña incorrecta."
         case .locked:
@@ -359,7 +359,7 @@ final class PrivateVaultSession: ObservableObject {
     func lock() {
         generation &+= 1
 
-        // Any path that locks Nikaido Vault must also terminate Nikaido Link.
+        // Any path that locks Takopi Vault must also terminate Nikaido Link.
         // The LAN core owns a copied working key while streaming, so relying
         // only on ContentView's privacy path would leave a direct/manual lock
         // with different security semantics.
@@ -412,7 +412,7 @@ final class PrivateVaultSession: ObservableObject {
     }
 
     func folderName(_ folderID: UUID?) -> String {
-        guard let folderID else { return "Nikaido Vault" }
+        guard let folderID else { return "Takopi Vault" }
         return entries.first(where: { $0.id == folderID })?.name ?? "Carpeta"
     }
 
@@ -1937,3 +1937,4 @@ final class PrivateVaultSession: ObservableObject {
         #endif
     }
 }
+

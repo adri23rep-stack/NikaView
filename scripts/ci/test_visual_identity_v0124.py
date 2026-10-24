@@ -17,7 +17,7 @@ checks = {
     "reduce motion respected by press effect": "struct NikaidoPressCardStyle" in theme and "reduceMotion ? 1" in theme,
     "branding appears in header": 'Image("TakopiLogo")' in home and 'Text("Takopi Explorer")' in home,
     "file icon refreshed": 'systemName: "folder.fill"' in home,
-    "vault melting edge": "HomeVaultMeltShape" in home and "minimumInterval: 1.0 / 20.0" in home,
+    "vault animated glow": "HomeVaultGlow" in home and "minimumInterval: 1.0 / 20.0" in home,
     "N logo greeting retained": "await playLogoHop()" in home and 'Text("¡Hazme click!")' in home,
     "category icons share identity": "systemName: category.symbol" in home,
     "staggered entrances": home.count(".nikaidoHomeEntrance(") >= 4,
@@ -30,10 +30,11 @@ checks = {
     "screen switching animated": "withAnimation(.easeInOut(duration: 0.24))" in content and ".transition(" in content,
     "vault exit is not animated": "privateVault.lock()\n                        navigate(.home, animated: false)" in content,
     "screens still accessible": "onOpenExplorer: { kind in" in content and "onOpenVault: {" in content,
-    "build version updated": pbx.count("MARKETING_VERSION = 0.12.6;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 43;") == 2,
+    "build version updated": pbx.count("MARKETING_VERSION = 0.12.7;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 44;") == 2,
 }
 
 for label, passed in checks.items():
     print(("OK " if passed else "FAIL ") + label)
 if not all(checks.values()):
     sys.exit(1)
+

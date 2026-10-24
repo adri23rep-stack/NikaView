@@ -303,22 +303,7 @@ struct NikaidoVaultMark: View {
                 .font(.system(size: size * 0.45, weight: .semibold))
                 .foregroundStyle(.white)
 
-            Circle()
-                .fill(.white.opacity(0.21))
-                .frame(width: size * 0.30, height: size * 0.30)
-                .overlay {
-                    NikaidoNMark()
-                        .stroke(
-                            Color.white,
-                            style: StrokeStyle(
-                                lineWidth: max(0.85, size * 0.025),
-                                lineCap: .round,
-                                lineJoin: .round
-                            )
-                        )
-                        .padding(size * 0.035)
-                }
-                .offset(x: size * 0.27, y: size * 0.27)
+
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
@@ -340,3 +325,4 @@ struct NikaidoPressCardStyle: ButtonStyle {
             )
     }
 }
+

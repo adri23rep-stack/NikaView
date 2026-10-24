@@ -27,7 +27,7 @@ enum LANTransferError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .vaultLocked:
-            return "Nikaido Vault debe permanecer desbloqueada durante la transferencia."
+            return "Takopi Vault debe permanecer desbloqueada durante la transferencia."
         case .listenerFailed(let text):
             return "No se pudo iniciar el receptor local: \(text)"
         case .invalidMagic:
@@ -59,9 +59,9 @@ enum LANTransferError: Error, LocalizedError {
         case .invalidManifest:
             return "El manifiesto de reanudación es inválido."
         case .ackFailed:
-            return "La PC no recibió la confirmación final de Nikaido Vault."
+            return "La PC no recibió la confirmación final de Takopi Vault."
         case .backgroundGraceExpired:
-            return "Nikaido Explorer permaneció demasiado tiempo en segundo plano. "
+            return "Takopi Explorer permaneció demasiado tiempo en segundo plano. "
                 + "La transferencia se canceló y la bóveda volvió a bloquearse."
         }
     }
@@ -525,7 +525,7 @@ final class LANVaultReceiver: ObservableObject {
         core = nil
 
         // Completed files are already authenticated and journaled inside
-        // Nikaido Vault's hidden pending area. Keep them for file-level resume.
+        // Takopi Vault's hidden pending area. Keep them for file-level resume.
         // Only the current incomplete file is deleted by the core.
         vault?.refreshOperationalStatus()
 
@@ -1575,3 +1575,4 @@ private extension String {
         return result
     }
 }
+

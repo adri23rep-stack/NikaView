@@ -541,7 +541,7 @@ final class StoredSecCollectionSession: ObservableObject {
         }
 
         // Video poster frames are derived sensitive data. If one already exists,
-        // it is loaded from Nikaido Vault's AES-GCM encrypted thumbnail cache.
+        // it is loaded from Takopi Vault's AES-GCM encrypted thumbnail cache.
         if
             let cachedData = await privateVault.cachedThumbnailData(
                 for: item.sourceEntry
@@ -1034,7 +1034,7 @@ struct StoredSecFolderViewer: View {
 
                 Text(
                     "Elige cómo abrirla. Los archivos siguen guardados "
-                    + "cifrados dentro de Nikaido Vault y solo se descifra "
+                    + "cifrados dentro de Takopi Vault y solo se descifra "
                     + "en RAM el que necesitas."
                 )
                 .font(.footnote)
@@ -1662,3 +1662,4 @@ struct StoredSecRekeyView: View {
         dismiss()
     }
 }
+
