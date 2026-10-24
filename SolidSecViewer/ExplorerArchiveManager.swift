@@ -4,7 +4,7 @@ import SWCompression
 import Unrar
 
 enum ExplorerArchiveManager {
-    static let supportedExtensions = Set(["zip", "7z", "rar"])
+    static let supportedExtensions = Set(["zip", "7z", "rar", "ipa", "apk"])
     private static let maximumEntries = 100_000
 
     // SWCompression 4.8.x expands 7z entries to Data, so this path is
@@ -64,7 +64,7 @@ enum ExplorerArchiveManager {
                 destination: stage
             ) { coordinatedArchive, coordinatedStage in
                 switch ext {
-                case "zip":
+                case "zip", "ipa", "apk":
                     try extractZIP(
                         coordinatedArchive,
                         to: coordinatedStage

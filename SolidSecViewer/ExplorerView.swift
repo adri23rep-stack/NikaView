@@ -88,6 +88,7 @@ struct ExplorerView: View {
     @State private var renameText = ""
     @State private var pendingAction: ExplorerPendingAction?
     @State private var previewTarget: ExplorerPreviewTarget?
+    @State private var packageTarget: ExplorerPackageTarget?
     @State private var regularVideoTarget: NikaidoRegularVideoTarget?
     @State private var shareURLs: [URL] = []
     @State private var showShareSheet = false
@@ -363,6 +364,14 @@ struct ExplorerView: View {
         }
         .sheet(item: $previewTarget) { target in
             ExplorerPreviewSheet(url: target.url)
+        }
+        .sheet(item: $packageTarget) { target in
+            ExplorerPackageBrowserView(target: target) {
+                Task {
+                    await leftPane.refresh()
+                    await rightPane.refresh()
+                }
+            }
         }
         .sheet(isPresented: $showShareSheet) {
             ExplorerShareSheet(urls: shareURLs)
@@ -1094,7 +1103,19 @@ struct ExplorerView: View {
             onOpenFile: { item in
                 activePane = index
 
-                if ExplorerTextEditorView.canEdit(item) {
+                if ExplorerPackageArchive.recognizes(item.url),
+                   let root = pane.location?.rootURL,
+                   let dir = pane.currentURL {
+                    let alternate = index == 0 ? rightPane : leftPane
+                    packageTarget = ExplorerPackageTarget(
+                        url: item.url,
+                        sourceRoot: root,
+                        destinationDirectory: dir,
+                        destinationRoot: root,
+                        otherDirectory: splitOpen ? alternate.currentURL : nil,
+                        otherRoot: splitOpen ? alternate.location?.rootURL : nil
+                    )
+                } else if ExplorerTextEditorView.canEdit(item) {
                     openEditor(item, paneIndex: index)
                 } else if NikaidoRegularVideoPlayer.supports(item) {
                     regularVideoTarget = NikaidoRegularVideoTarget(url: item.url)
@@ -2215,7 +2236,8 @@ struct ExplorerPaneView: View {
             Button {
                 onOpenFile(item)
             } label: {
-                Label("Vista rápida", systemImage: "eye")
+                Label(item.isAppPackage || item.pathExtension == "zip"
+                      ? "Explorar contenido" : "Vista rápida", systemImage: "eye")
             }
         }
 
@@ -2399,15 +2421,23 @@ struct ExplorerMediaThumbnail: View {
         .task(id: item.id) {
             image = nil
 
-            guard item.hasMediaThumbnail else { return }
+            guard item.hasMediaThumbnail || item.isAppPackage else { return }
 
             isLoading = true
             defer { isLoading = false }
 
-            let thumbnail = await ExplorerMediaThumbnailGenerator.thumbnail(
-                for: item.url,
-                size: CGSize(width: 360, height: 360)
-            )
+            let thumbnail: UIImage?
+            if item.isAppPackage {
+                let url = item.url
+                thumbnail = await Task.detached(priority: .utility) {
+                    ExplorerPackageIconStore.shared.icon(for: url)
+                }.value
+            } else {
+                thumbnail = await ExplorerMediaThumbnailGenerator.thumbnail(
+                    for: item.url,
+                    size: CGSize(width: 360, height: 360)
+                )
+            }
 
             guard !Task.isCancelled else { return }
             image = thumbnail
@@ -2462,7 +2492,7 @@ private struct ExplorerFileRow: View {
                 .transition(.scale.combined(with: .opacity))
             }
 
-            if item.hasMediaThumbnail && showMediaThumbnails {
+            if (item.hasMediaThumbnail && showMediaThumbnails) || item.isAppPackage {
                 ExplorerMediaThumbnail(item: item, tint: tint)
                     .frame(width: 44, height: 40)
                     .clipShape(RoundedRectangle(cornerRadius: 9))
@@ -2551,7 +2581,7 @@ private struct ExplorerFileGridCell: View {
                     .fill(tint.opacity(0.12))
                     .aspectRatio(1.1, contentMode: .fit)
 
-                if item.hasMediaThumbnail && showMediaThumbnails {
+                if (item.hasMediaThumbnail && showMediaThumbnails) || item.isAppPackage {
                     ExplorerMediaThumbnail(item: item, tint: tint)
                         .clipShape(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)

@@ -6,7 +6,7 @@ enum NikaidoBinaryInspector {
     nonisolated static func report(url: URL, mappedData data: Data) -> String? {
         let ext = url.pathExtension.lowercased()
         switch ext {
-        case "ipa", "zip": return inspectZIP(url)
+        case "ipa", "apk", "zip": return inspectZIP(url)
         case "deb": return inspectDeb(data)
         case "dylib", "so", "a", "framework", "app": return inspectMachO(data)
         default: return inspectMachO(data)

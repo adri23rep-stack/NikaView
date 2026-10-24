@@ -24,7 +24,7 @@ checks = {
     "plus outside glass capsule": dock.find(".modifier(NikaidoGlassCapsule())") < dock.find("floatingAddButton"),
     "search still accessible": "searchingPaneIndex = activePane" in dock and "@Binding var showSearch: Bool" in explorer,
     "safe Vault controls": "private var browserActions" in vault and "vault.lock()" in vault,
-    "new build number": pbx.count("MARKETING_VERSION = 0.12.9;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 46;") == 2,
+    "new build number": pbx.count("MARKETING_VERSION = 0.12.10;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 47;") == 2,
 }
 for name, passed in checks.items():
     print(("OK " if passed else "FAIL ") + name)
