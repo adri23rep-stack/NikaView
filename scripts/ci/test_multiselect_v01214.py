@@ -12,7 +12,7 @@ checks = {
     "Files already supports selected drag group": "dragItems(for: item)" in files and "pane.selectedItems" in files,
     "Files actions persist": "private var selectionToolbar: some View" in files,
     "Vault top selection": 'Button(selectionMode ? "Listo" : "Seleccionar")' in vault,
-    "Vault select all": "selectedVaultIDs = Set(visibleChildren.map(\\.id))" in vault,
+    "Vault select all": "selectedVaultIDs.formUnion(allIDs)" in vault and "selectedVaultIDs.subtract(allIDs)" in vault,
     "Vault group drag": "selectedVaultIDs.contains(entry.id)" in vault and "vaultDrag.begin(ids: ids" in vault,
     "Vault drag handle in selection mode": "El asa permanece visible aun con varios elementos seleccionados" in vault,
     "Vault destination chosen by UUID": "struct PrivateVaultDrop" in drag and "folderID: UUID?" in drag,
