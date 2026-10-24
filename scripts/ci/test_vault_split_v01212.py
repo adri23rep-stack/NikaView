@@ -27,7 +27,7 @@ checks = {
     "vault lock blocks deletion": "guard vault.isUnlocked else { throw PrivateVaultError.locked }" in explorer,
     "vault lock clears folder state": "currentFolderID = nil" in pane and "password = \"\"" in pane,
     "project includes both Swift views": "A970" in pbx and "B970" in pbx and "A971" in pbx and "B971" in pbx,
-    "v0.12.12 build49": pbx.count("MARKETING_VERSION = 0.12.12;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 49;") == 2,
+    "v0.12.12 build49": pbx.count("MARKETING_VERSION = 0.12.13;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 50;") == 2,
 }
 for title, ok in checks.items():
     print(("[OK] " if ok else "[FAIL] ") + title)
