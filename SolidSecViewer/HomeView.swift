@@ -312,47 +312,20 @@ struct HomeView: View {
             ZStack {
                 Color(uiColor: .systemBackground)
 
-                // Soft, enormous lava-lamp orbs behind the actual interface.
-                // They never receive touches and stop moving when Home disappears.
+                // Seis orbes suaves; se suspenden con Reducir movimiento y Bajo consumo.
                 if !reduceTransparency {
-                    Circle()
-                        .fill(Color.mint.opacity(0.18))
-                        .frame(width: 340, height: 340)
-                        .blur(radius: 72)
-                        .offset(
-                            x: lavaDrift ? -proxy.size.width * 0.38 : -proxy.size.width * 0.04,
-                            y: lavaDrift ? -proxy.size.height * 0.13 : proxy.size.height * 0.18
-                        )
-                        .animation(
-                            reduceMotion ? nil : .easeInOut(duration: 22).repeatForever(autoreverses: true),
-                            value: lavaDrift
-                        )
-
-                    Circle()
-                        .fill(Color.blue.opacity(0.12))
-                        .frame(width: 390, height: 390)
-                        .blur(radius: 85)
-                        .offset(
-                            x: lavaDrift ? proxy.size.width * 0.37 : proxy.size.width * 0.08,
-                            y: lavaDrift ? proxy.size.height * 0.48 : proxy.size.height * 0.20
-                        )
-                        .animation(
-                            reduceMotion ? nil : .easeInOut(duration: 28).repeatForever(autoreverses: true),
-                            value: lavaDrift
-                        )
-
-                    Circle()
-                        .fill(nikaidoAccent.opacity(0.09))
-                        .frame(width: 310, height: 310)
-                        .blur(radius: 82)
-                        .offset(
-                            x: lavaDrift ? -proxy.size.width * 0.12 : proxy.size.width * 0.32,
-                            y: lavaDrift ? proxy.size.height * 0.03 : -proxy.size.height * 0.28
-                        )
-                        .animation(
-                            reduceMotion ? nil : .easeInOut(duration: 26).repeatForever(autoreverses: true),
-                            value: lavaDrift
-                        )
+                    ambientOrb(.mint.opacity(0.21), diameter: 340, blur: 65,
+                        from: [-0.42, -0.2], to: [0.04, 0.18], seconds: 13, bounds: proxy.size)
+                    ambientOrb(.blue.opacity(0.16), diameter: 380, blur: 76,
+                        from: [0.42, 0.36], to: [0.1, -0.23], seconds: 17, bounds: proxy.size)
+                    ambientOrb(nikaidoAccent.opacity(0.18), diameter: 290, blur: 65,
+                        from: [0.26, -0.3], to: [-0.35, 0.05], seconds: 11, bounds: proxy.size)
+                    ambientOrb(.cyan.opacity(0.11), diameter: 220, blur: 47,
+                        from: [-0.34, 0.48], to: [0.28, 0.14], seconds: 15, bounds: proxy.size)
+                    ambientOrb(.purple.opacity(0.13), diameter: 200, blur: 46,
+                        from: [0.3, 0.55], to: [-0.24, -0.31], seconds: 19, bounds: proxy.size)
+                    ambientOrb(.indigo.opacity(0.10), diameter: 260, blur: 58,
+                        from: [0.12, -0.45], to: [-0.3, 0.37], seconds: 14, bounds: proxy.size)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -382,6 +355,29 @@ struct HomeView: View {
         .modifier(NikaidoGlassCapsule())
         .padding(.horizontal, 20)
         .padding(.bottom, 8)
+    }
+
+    private func ambientOrb(
+        _ tint: Color,
+        diameter: CGFloat,
+        blur: CGFloat,
+        from: [CGFloat],
+        to: [CGFloat],
+        seconds: Double,
+        bounds: CGSize
+    ) -> some View {
+        Circle()
+            .fill(tint)
+            .frame(width: diameter, height: diameter)
+            .blur(radius: blur)
+            .offset(
+                x: (lavaDrift ? to[0] : from[0]) * bounds.width,
+                y: (lavaDrift ? to[1] : from[1]) * bounds.height
+            )
+            .animation(
+                motionEnabled ? .easeInOut(duration: seconds).repeatForever(autoreverses: true) : nil,
+                value: lavaDrift
+            )
     }
 
     // MARK: Encabezado
@@ -754,70 +750,71 @@ private struct HomeStorageCard: View {
     }
 }
 
-// MARK: - Burbujas discretas en el borde de Nikaido Vault
+// MARK: - Borde orgánico que sobresale de Takopi Vault
 
-private struct HomeVaultBubbles: View {
+private struct HomeVaultMelt: View {
     let tint: Color
     let animated: Bool
-
-    private struct Bubble {
-        let x: CGFloat
-        let radius: CGFloat
-        let speed: Double
-        let phase: Double
-    }
-
-    // Small translucent glass beads float upward in roughly 1.5–2.5 seconds.
-    // The right-hand strip keeps them clear of Nikaido's brand mark and text.
-    private let bubbles: [Bubble] = [
-        Bubble(x: 8, radius: 2.8, speed: 0.64, phase: 0.08),
-        Bubble(x: 17, radius: 4.0, speed: 0.51, phase: 0.41),
-        Bubble(x: 29, radius: 3.3, speed: 0.57, phase: 0.70),
-        Bubble(x: 37, radius: 2.5, speed: 0.69, phase: 0.24)
-    ]
 
     var body: some View {
         Group {
             if animated {
-                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
-                    bubbleCanvas(time: timeline.date.timeIntervalSinceReferenceDate)
+                TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { timeline in
+                    melt(at: timeline.date.timeIntervalSinceReferenceDate)
                 }
             } else {
-                bubbleCanvas(time: 0)
+                melt(at: 0)
             }
         }
-        .accessibilityHidden(true)
     }
 
-    private func bubbleCanvas(time: TimeInterval) -> some View {
-        Canvas { context, size in
-            for bubble in bubbles {
-                let progress = CGFloat(
-                    (time * bubble.speed + bubble.phase).truncatingRemainder(dividingBy: 1)
-                )
-                let radius = bubble.radius
-                let drift = CGFloat(sin(time * 3 + bubble.phase * 6)) * 2
-                let rect = CGRect(
-                    x: bubble.x + drift - radius,
-                    y: size.height + radius - progress * (size.height + radius * 2) - radius,
-                    width: radius * 2,
-                    height: radius * 2
-                )
-                let fade = max(CGFloat(0), min(CGFloat(1),
-                    min(progress * 6, (1 - progress) * 6)))
-                let circle = Path(ellipseIn: rect)
-                context.fill(circle, with: .color(tint.opacity(0.12 * Double(fade))))
-                context.stroke(circle, with: .color(tint.opacity(0.72 * Double(fade))), lineWidth: 1.0)
+    private func melt(at time: TimeInterval) -> some View {
+        HomeVaultMeltShape(phase: CGFloat(time))
+            .fill(LinearGradient(
+                colors: [tint.nikaidoDarkened(0.85), tint.nikaidoDarkened(0.68)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
+    }
+}
 
-                let highlight = Path(ellipseIn: CGRect(
-                    x: rect.minX + radius * 0.42,
-                    y: rect.minY + radius * 0.22,
-                    width: radius * 0.45,
-                    height: radius * 0.45
-                ))
-                context.fill(highlight, with: .color(.white.opacity(0.42 * Double(fade))))
-            }
-        }
+private struct HomeVaultMeltShape: Shape {
+    var phase: CGFloat
+
+    func path(in r: CGRect) -> Path {
+        let wave = CGFloat(sin(Double(phase) * 2.2)) * 4
+        let lower = CGFloat(sin(Double(phase) * 1.6 + 1.1)) * 4
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.minY + 6))
+        p.addCurve(
+            to: CGPoint(x: r.maxX - 13, y: r.minY + 16),
+            control1: CGPoint(x: r.minX + 29, y: r.minY - 2),
+            control2: CGPoint(x: r.maxX - 17, y: r.minY + 5)
+        )
+        p.addCurve(
+            to: CGPoint(x: r.maxX - 5 + wave, y: r.minY + 39),
+            control1: CGPoint(x: r.maxX + wave, y: r.minY + 19),
+            control2: CGPoint(x: r.maxX + 7 + wave, y: r.minY + 33)
+        )
+        p.addCurve(
+            to: CGPoint(x: r.maxX - 17, y: r.minY + 60),
+            control1: CGPoint(x: r.maxX - 19, y: r.minY + 43),
+            control2: CGPoint(x: r.maxX - 3, y: r.minY + 54)
+        )
+        p.addCurve(
+            to: CGPoint(x: r.maxX - 12 + lower, y: r.maxY - 5),
+            control1: CGPoint(x: r.maxX - 33, y: r.minY + 66),
+            control2: CGPoint(x: r.maxX - 3 + lower, y: r.maxY - 22)
+        )
+        p.addQuadCurve(
+            to: CGPoint(x: r.minX + 16, y: r.maxY - 13),
+            control: CGPoint(x: r.maxX - 12, y: r.maxY + 10)
+        )
+        p.addQuadCurve(
+            to: CGPoint(x: r.minX, y: r.minY + 6),
+            control: CGPoint(x: r.minX - 7, y: r.midY)
+        )
+        p.closeSubpath()
+        return p
     }
 }
 
