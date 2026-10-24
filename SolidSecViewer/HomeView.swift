@@ -1156,7 +1156,7 @@ struct HomeAllFoldersView: View {
             case .all: return "Todas"
             case .iCloud: return "iCloud"
             case .iPhone: return "iPhone"
-            case .nikaview: return "NikaView"
+            case .nikaview: return "Takopi"
             }
         }
     }
