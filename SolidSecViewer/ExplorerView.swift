@@ -1104,8 +1104,8 @@ struct ExplorerView: View {
                 activePane = index
 
                 if ExplorerPackageArchive.recognizes(item.url),
-                   let root = pane(at: index).location?.rootURL,
-                   let dir = pane(at: index).currentURL {
+                   let root = pane.location?.rootURL,
+                   let dir = pane.currentURL {
                     let alternate = index == 0 ? rightPane : leftPane
                     packageTarget = ExplorerPackageTarget(
                         url: item.url,
