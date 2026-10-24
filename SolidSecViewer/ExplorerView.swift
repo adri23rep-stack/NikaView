@@ -517,7 +517,7 @@ struct ExplorerView: View {
             )
         }
         .alert(
-            "Nikaido Explorer",
+            "Takopi Explorer",
             isPresented: Binding(
                 get: { globalError != nil },
                 set: {
@@ -834,7 +834,7 @@ struct ExplorerView: View {
                     }
                 }
 
-                Section("Nikaido") {
+                Section("Takopi") {
                     Button {
                         showSMB = true
                     } label: {
@@ -866,7 +866,7 @@ struct ExplorerView: View {
                         onOpenVault()
                     } label: {
                         Label(
-                            "Nikaido Vault",
+                            "Takopi Vault",
                             systemImage: "lock.square.stack.fill"
                         )
                     }
@@ -2731,7 +2731,7 @@ struct ExplorerStorageLocationsView: View {
 
                                     Text(
                                         location.kind == .local
-                                        ? "Almacenamiento de Nikaido Explorer"
+                                        ? "Almacenamiento de Takopi Explorer"
                                         : location.isPersistentReference
                                             ? location.source.title
                                             : location.source.title + " · solo esta sesión"
@@ -2808,7 +2808,7 @@ struct ExplorerStorageLocationsView: View {
                 Section {
                     Text(
                         "Selecciona una carpeta desde Archivos para autorizarla. "
-                        + "Nikaido Explorer puede trabajar dentro de esa raíz y "
+                        + "Takopi Explorer puede trabajar dentro de esa raíz y "
                         + "sus subcarpetas mientras iOS mantenga el permiso. No "
                         + "equivale a acceso root del sistema."
                     )
