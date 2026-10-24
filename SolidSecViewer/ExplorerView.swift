@@ -104,6 +104,8 @@ struct ExplorerView: View {
 
     /// El segundo panel solo aparece cuando lo necesitas.
     @State private var splitOpen = false
+    @State private var vaultPaneOpen = false
+    @State private var vaultSplitFolderID: UUID?
     @State private var splitFraction: CGFloat = 0.5
     @State private var splitHint: String?
     @State private var showFileImporter = false
@@ -116,6 +118,7 @@ struct ExplorerView: View {
     @StateObject private var dragState = ExplorerDragState()
     @State private var infoTarget: ExplorerFileItem?
     @State private var vaultSendItems: [ExplorerFileItem] = []
+    @State private var vaultSendDestinationID: UUID?
     @State private var vaultSendPane = 0
     @State private var showVaultSendConfirm = false
     @State private var vaultNeedsUnlock = false
@@ -159,7 +162,18 @@ struct ExplorerView: View {
                     ExplorerResizableSplit(fraction: $splitFraction) {
                         paneView(leftPane, index: 0)
                     } second: {
-                        paneView(rightPane, index: 1)
+                        if vaultPaneOpen {
+                            ExplorerVaultSplitPane(
+                                currentFolderID: $vaultSplitFolderID,
+                                dragState: dragState,
+                                onOpenFullVault: onOpenVault,
+                                onSwitchToFiles: showTwoFilePanes,
+                                onFilesDropped: handleVaultDrop
+                            )
+                            .environmentObject(privateVault)
+                        } else {
+                            paneView(rightPane, index: 1)
+                        }
                     }
                 }
 
@@ -295,15 +309,19 @@ struct ExplorerView: View {
             isPresented: $showVaultSendConfirm,
             titleVisibility: .visible
         ) {
+            Button("Cifrar y conservar originales") {
+                performSendToVault(deleteOriginals: false)
+            }
             Button("Cifrar y borrar originales", role: .destructive) {
-                performSendToVault()
+                performSendToVault(deleteOriginals: true)
             }
 
             Button("Cancelar", role: .cancel) {
                 vaultSendItems = []
+                vaultSendDestinationID = nil
             }
         } message: {
-            Text("Se cifran dentro de la bóveda y los originales se borran sin pasar por la papelera.")
+            Text("Los archivos se cifran en la carpeta elegida. Elige si deseas conservar o borrar los originales después de importar correctamente.")
         }
         .alert(
             spaceNotice?.title ?? "Espacio",
@@ -860,6 +878,19 @@ struct ExplorerView: View {
                     }
 
                     Button {
+                        openVaultSplit()
+                    } label: {
+                        Label("Bóveda en pantalla dividida", systemImage: "rectangle.split.2x1")
+                    }
+                    if vaultPaneOpen {
+                        Button {
+                            showTwoFilePanes()
+                        } label: {
+                            Label("Dos paneles de archivos", systemImage: "folder.badge.gearshape")
+                        }
+                    }
+
+                    Button {
                         onOpenSecReader()
                     } label: {
                         Label(
@@ -965,7 +996,8 @@ struct ExplorerView: View {
 
     private func requestSendToVault(
         _ items: [ExplorerFileItem],
-        paneIndex: Int
+        paneIndex: Int,
+        destinationFolderID: UUID? = nil
     ) {
         guard !items.isEmpty else { return }
 
@@ -976,14 +1008,17 @@ struct ExplorerView: View {
 
         vaultSendItems = items
         vaultSendPane = paneIndex
+        vaultSendDestinationID = destinationFolderID
         showVaultSendConfirm = true
     }
 
-    private func performSendToVault() {
+    private func performSendToVault(deleteOriginals: Bool) {
         let items = vaultSendItems
         let sourcePane = pane(at: vaultSendPane)
+        let destinationID = vaultSendDestinationID
 
         vaultSendItems = []
+        vaultSendDestinationID = nil
 
         guard let root = sourcePane.location?.rootURL, !items.isEmpty else {
             return
@@ -995,16 +1030,21 @@ struct ExplorerView: View {
 
         let vault = privateVault
 
-        operationQueue.enqueue(title: title, kind: .move) {
+        operationQueue.enqueue(title: title, kind: deleteOriginals ? .move : .copy) {
             for item in items {
+                try ExplorerFileEngine.ensureInsideRoot(item.url, root: root)
+                guard vault.isUnlocked else { throw PrivateVaultError.locked }
                 try await ExplorerVaultBridge.send(
                     item.url,
                     into: vault,
-                    parentID: nil
+                    parentID: destinationID
                 )
             }
 
-            try await ExplorerFileEngine.delete(items, root: root)
+            if deleteOriginals {
+                guard vault.isUnlocked else { throw PrivateVaultError.locked }
+                try await ExplorerFileEngine.delete(items, root: root)
+            }
             await sourcePane.refresh()
         }
     }
@@ -1013,9 +1053,39 @@ struct ExplorerView: View {
         if splitOpen {
             withAnimation(.easeInOut(duration: 0.2)) {
                 splitOpen = false
+                vaultPaneOpen = false
+                vaultSplitFolderID = nil
             }
         } else {
             openSplit()
+        }
+    }
+
+    /// El segundo panel es una vista de la sesión cifrada, NO una carpeta
+    /// con archivos descifrados. El original nunca se borra sin confirmación.
+    private func openVaultSplit() {
+        if activePane == 1, let location = rightPane.location,
+           let folder = rightPane.currentURL {
+            leftPane.openLocation(location, folderURL: folder)
+        }
+        activePane = 0
+        vaultSplitFolderID = nil
+        withAnimation(.easeInOut(duration: 0.2)) {
+            vaultPaneOpen = true
+            splitOpen = true
+        }
+    }
+
+    private func showTwoFilePanes() {
+        vaultSplitFolderID = nil
+        if let location = leftPane.location,
+           let folder = leftPane.currentURL,
+           rightPane.currentURL == nil {
+            rightPane.openLocation(location, folderURL: folder)
+        }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            vaultPaneOpen = false
+            splitOpen = true
         }
     }
 
@@ -1580,7 +1650,37 @@ struct ExplorerView: View {
 
     /// Soltar con el asa de arrastre: sobre una carpeta o sobre el otro panel.
     private func performDrop(_ request: ExplorerDropRequest) {
-        pendingDrop = request
+        if case .pane(let index) = request.target,
+           index == 1, splitOpen, vaultPaneOpen, request.sourcePane == 0 {
+            requestSendToVault(
+                request.items,
+                paneIndex: request.sourcePane,
+                destinationFolderID: vaultSplitFolderID
+            )
+        } else {
+            pendingDrop = request
+        }
+    }
+
+    /// Arrastre nativo opcional, usa el mismo token seguro que Takopi Files.
+    private func handleVaultDrop(_ providers: [NSItemProvider]) -> Bool {
+        guard splitOpen, vaultPaneOpen, privateVault.isUnlocked else { return false }
+        Task {
+            do {
+                let payload = try await ExplorerDragPayload.load(from: providers)
+                guard payload.sourcePane == 0 else { return }
+                let urlSet = Set(payload.urls)
+                let items = leftPane.items.filter { urlSet.contains($0.url.absoluteString) }
+                guard items.count == urlSet.count, !items.isEmpty else {
+                    globalError = "No se encontraron todos los archivos originales del arrastre."
+                    return
+                }
+                requestSendToVault(items, paneIndex: 0, destinationFolderID: vaultSplitFolderID)
+            } catch {
+                globalError = ExplorerErrorText.message(for: error)
+            }
+        }
+        return true
     }
 
     private func executeDrop(moving: Bool) {
