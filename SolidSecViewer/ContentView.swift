@@ -382,7 +382,7 @@ struct ContentView: View {
                 .font(.system(size: 68))
                 .foregroundStyle(.secondary)
 
-            Text("Nikaido Explorer")
+            Text("Takopi Explorer")
                 .font(.largeTitle.bold())
 
             Text("Privacidad, multimedia y Nikaido Vault")
@@ -396,7 +396,7 @@ struct ContentView: View {
                         .font(.title2)
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Nikaido Vault")
+                        Text("Takopi Vault")
                             .font(.headline)
 
                         Text("Espacio propio cifrado dentro de la app")
