@@ -166,6 +166,46 @@ struct NikaidoGlassCapsule: ViewModifier {
     }
 }
 
+/// Botón de selección compacto con área táctil de 44 puntos.
+/// No usa palabras largas dentro de la barra y mantiene buen contraste
+/// con cualquier color de acento, incluso amarillo.
+struct TakopiSelectionActionIcon: View {
+    @Environment(\.nikaidoAccent) private var accent
+    let systemName: String
+    var prominent: Bool = false
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(.primary)
+            .frame(width: 44, height: 44)
+            .background(
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(prominent ? accent.opacity(0.25)
+                                    : Color(uiColor: .secondarySystemGroupedBackground))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+    }
+}
+
+/// Contador adaptable que nunca parte «seleccionados» en varias líneas.
+struct TakopiSelectionCount: View {
+    let count: Int
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            Text("\(count) seleccionados")
+            Text("\(count) archivos")
+            Text("\(count)")
+        }
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
+        .accessibilityLabel("\(count) archivos seleccionados")
+    }
+}
+
 struct NikaidoGlassActionStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 

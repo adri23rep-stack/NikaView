@@ -1302,46 +1302,50 @@ struct ExplorerView: View {
         )
     }
 
+    // No se usan botones con texto aquí: se ajusta a iPhone mini,
+    // al panel dividido y a tamaños de letra grandes sin saltos de línea.
     private var selectionToolbar: some View {
-        HStack(spacing: 8) {
-            Text(
-                "\(active.selectedItems.count) seleccionado(s)"
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            Spacer()
+        HStack(spacing: 7) {
+            TakopiSelectionCount(count: active.selectedItems.count)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Button {
-                active.selectAll()
+                if !active.items.isEmpty,
+                   active.selectedIDs.count == active.items.count {
+                    active.clearSelection()
+                } else {
+                    active.selectAll()
+                }
+                NikaidoTheme.haptic(.light)
             } label: {
-                Image(systemName: "checkmark.circle")
-            }
-            .buttonStyle(.bordered)
-            .accessibilityLabel("Seleccionar todo")
-
-            Button {
-                requestTransfer(
-                    active.selectedItems,
-                    fromPane: activePane,
-                    moving: false
+                TakopiSelectionActionIcon(
+                    systemName: !active.items.isEmpty &&
+                        active.selectedIDs.count == active.items.count
+                        ? "checkmark.circle.fill" : "checkmark.circle"
                 )
-            } label: {
-                Label("Copiar", systemImage: "doc.on.doc")
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.plain)
+            .accessibilityLabel(
+                !active.items.isEmpty && active.selectedIDs.count == active.items.count
+                ? "Deseleccionar todos" : "Seleccionar todos"
+            )
+
+            Button {
+                requestTransfer(active.selectedItems, fromPane: activePane, moving: false)
+            } label: {
+                TakopiSelectionActionIcon(systemName: "doc.on.doc")
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Copiar seleccionados")
             .disabled(active.selectedItems.isEmpty)
 
             Button {
-                requestTransfer(
-                    active.selectedItems,
-                    fromPane: activePane,
-                    moving: true
-                )
+                requestTransfer(active.selectedItems, fromPane: activePane, moving: true)
             } label: {
-                Label("Mover", systemImage: "arrow.right.square")
+                TakopiSelectionActionIcon(systemName: "folder.fill", prominent: true)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Mover seleccionados")
             .disabled(active.selectedItems.isEmpty)
 
             Menu {
@@ -1353,39 +1357,31 @@ struct ExplorerView: View {
                 }
 
                 Button {
-                    compress(
-                        active.selectedItems,
-                        paneIndex: activePane
-                    )
+                    compress(active.selectedItems, paneIndex: activePane)
                 } label: {
                     Label("Comprimir ZIP", systemImage: "archivebox")
                 }
 
                 Button {
-                    requestSendToVault(
-                        active.selectedItems,
-                        paneIndex: activePane
-                    )
+                    requestSendToVault(active.selectedItems, paneIndex: activePane)
                 } label: {
                     Label("Mover a la bóveda", systemImage: "lock.shield")
                 }
 
                 Button(role: .destructive) {
-                    requestDelete(
-                        active.selectedItems,
-                        paneIndex: activePane
-                    )
+                    requestDelete(active.selectedItems, paneIndex: activePane)
                 } label: {
                     Label("Eliminar", systemImage: "trash")
                 }
             } label: {
-                Image(systemName: "ellipsis")
+                TakopiSelectionActionIcon(systemName: "ellipsis")
             }
-            .buttonStyle(.bordered)
+            .accessibilityLabel("Más acciones para seleccionados")
             .disabled(active.selectedItems.isEmpty)
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 12)
         .padding(.vertical, 7)
+        .background(Color(uiColor: .systemBackground))
     }
 
     private func pane(at index: Int) -> ExplorerPaneState {

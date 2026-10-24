@@ -12,7 +12,7 @@ checks = {
     "Files already supports selected drag group": "dragItems(for: item)" in files and "pane.selectedItems" in files,
     "Files actions persist": "private var selectionToolbar: some View" in files,
     "Vault top selection": 'Button(selectionMode ? "Listo" : "Seleccionar")' in vault,
-    "Vault select all": "selectedVaultIDs = Set(visibleChildren.map(\\.id))" in vault,
+    "Vault select all": "selectedVaultIDs.formUnion(allIDs)" in vault and "selectedVaultIDs.subtract(allIDs)" in vault,
     "Vault group drag": "selectedVaultIDs.contains(entry.id)" in vault and "vaultDrag.begin(ids: ids" in vault,
     "Vault drag handle in selection mode": "El asa permanece visible aun con varios elementos seleccionados" in vault,
     "Vault destination chosen by UUID": "struct PrivateVaultDrop" in drag and "folderID: UUID?" in drag,
@@ -27,7 +27,7 @@ checks = {
     "Collision prevention": "occupied.contains($0.name.lowercased())" in session,
     "No cipher file moving": "var updated = entry" in session and "updated.parentID = parentID" in session,
     "New drag source included": "A972" in pbx and "B972" in pbx,
-    "Version correct": pbx.count("MARKETING_VERSION = 0.12.14;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 51;") == 2,
+    "Version correct": pbx.count("MARKETING_VERSION = 0.12.15;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 52;") == 2,
 }
 for label, passed in checks.items():
     print(("[OK] " if passed else "[FAIL] ") + label)

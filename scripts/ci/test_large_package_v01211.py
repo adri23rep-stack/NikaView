@@ -15,7 +15,7 @@ checks = {
     "fewer candidates for large icon": "ranked.prefix(isLarge ? 3 : 16)" in source,
     "safe size display": "Int64(clamping: entry.size)" in source,
     "keeps individual extraction": 'Button("Extraer al otro panel")' in source,
-    "version bump": project.count("MARKETING_VERSION = 0.12.14;") == 2 and project.count("CURRENT_PROJECT_VERSION = 51;") == 2,
+    "version bump": project.count("MARKETING_VERSION = 0.12.15;") == 2 and project.count("CURRENT_PROJECT_VERSION = 52;") == 2,
 }
 for name, passed in checks.items():
     print(("[OK] " if passed else "[FAIL] ") + name)
