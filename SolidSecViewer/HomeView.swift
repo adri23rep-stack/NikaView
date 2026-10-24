@@ -145,7 +145,7 @@ enum HomeTourSource: String, Identifiable {
         case .iCloud:
             return [Color(red: 0.30, green: 0.61, blue: 1.0), Color(red: 0.16, green: 0.37, blue: 0.82)]
         case .iPhone:
-            return [Color(red: 0.48, green: 0.48, blue: 0.53), Color(red: 0.26, green: 0.26, blue: 0.31)]
+            return [Color(red: 0.62, green: 0.52, blue: 0.93), Color(red: 0.38, green: 0.47, blue: 0.76)]
         }
     }
 
@@ -279,14 +279,14 @@ struct HomeView: View {
                 Button {
                     onOpenExplorer(.folder(pair.0.id, pair.1))
                 } label: {
-                    Label(pair.1.lastPathComponent, systemImage: "star.fill")
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HomeQuickAccessRow(
+                        title: pair.1.lastPathComponent,
+                        symbol: "star.fill",
+                        tint: nikaidoAccent
+                    )
                 }
-                .buttonStyle(.plain)
-                .padding(.vertical, 12)
-                .padding(.horizontal, 14)
-                .background(Color(uiColor: .secondarySystemBackground),
-                            in: RoundedRectangle(cornerRadius: 14))
+                .buttonStyle(NikaidoPressCardStyle())
+                .accessibilityLabel("Abrir favorito \(pair.1.lastPathComponent)")
             }
             ForEach(recentFolders.prefix(4)) { item in
                 if let location = locations.locations.first(where: { $0.id == item.locationID }) {
@@ -296,14 +296,14 @@ struct HomeView: View {
                         Button {
                             onOpenExplorer(.folder(location.id, url))
                         } label: {
-                            Label(item.label, systemImage: "clock.arrow.circlepath")
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            HomeQuickAccessRow(
+                                title: item.label,
+                                symbol: "clock.arrow.circlepath",
+                                tint: .cyan
+                            )
                         }
-                        .buttonStyle(.plain)
-                .padding(.vertical, 12)
-                .padding(.horizontal, 14)
-                .background(Color(uiColor: .secondarySystemBackground),
-                            in: RoundedRectangle(cornerRadius: 14))
+                        .buttonStyle(NikaidoPressCardStyle())
+                        .accessibilityLabel("Abrir carpeta reciente \(item.label)")
                     }
                 }
             }
@@ -523,8 +523,12 @@ struct HomeView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 82)
-            .background(Color(uiColor: .secondarySystemBackground),
-                        in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(HomeTintedCardSurface(
+                tint: nikaidoAccent,
+                secondary: .mint,
+                radius: 20,
+                strength: 1.05
+            ))
             .foregroundStyle(.primary)
         }
         .buttonStyle(NikaidoPressCardStyle())
@@ -597,6 +601,18 @@ struct HomeView: View {
 
     // MARK: Por tipo
 
+    private func categoryTint(_ filter: ExplorerGlobalFilter) -> Color {
+        switch filter {
+        case .music: return .purple
+        case .images: return .mint
+        case .videos: return .orange
+        case .text: return .teal
+        case .packages: return .indigo
+        case .documents: return .blue
+        default: return nikaidoAccent
+        }
+    }
+
     private var categoriesSection: some View {
         VStack(spacing: 8) {
             HStack {
@@ -629,7 +645,7 @@ struct HomeView: View {
                         VStack(spacing: 9) {
                             NikaidoFeatureMark(
                                 systemName: category.symbol,
-                                tint: nikaidoAccent,
+                                tint: categoryTint(category.filter),
                                 size: 48
                             )
 
@@ -640,10 +656,11 @@ struct HomeView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 100)
-                        .background(
-                            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                .fill(Color(uiColor: .secondarySystemBackground))
-                        )
+                        .background(HomeTintedCardSurface(
+                            tint: categoryTint(category.filter),
+                            radius: 22,
+                            strength: 0.86
+                        ))
                         .foregroundStyle(.primary)
                     }
                     .buttonStyle(NikaidoPressCardStyle())
@@ -686,10 +703,106 @@ private struct HomeStorageCard: View {
             .frame(height: 135)
             .padding(15)
             .foregroundStyle(.primary)
-            .background(Color(uiColor: .secondarySystemBackground),
-                        in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(HomeTintedCardSurface(
+                tint: colors.first ?? .blue,
+                secondary: colors.last,
+                radius: 20,
+                strength: 1.15
+            ))
         }
         .buttonStyle(NikaidoPressCardStyle())
+    }
+}
+
+// MARK: - Superficies de tarjetas adaptativas (sin cambiar el tema del sistema)
+
+/// El fondo usa los colores dinámicos de iOS, no un blanco/negro fijo.
+/// El tinte se ajusta para conservar texto legible en ambos esquemas.
+private struct HomeTintedCardSurface: View {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    let tint: Color
+    var secondary: Color? = nil
+    var radius: CGFloat = 20
+    var strength: Double = 1.0
+
+    var body: some View {
+        let dark = scheme == .dark
+        let companion = secondary ?? tint
+        let start = (dark ? 0.36 : 0.21) * strength
+        let end = (dark ? 0.15 : 0.09) * strength
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+
+        shape
+            .fill(Color(uiColor: .secondarySystemBackground))
+            .overlay {
+                shape.fill(
+                    LinearGradient(
+                        colors: [
+                            tint.opacity(start),
+                            companion.opacity(end),
+                            tint.opacity(dark ? 0.08 : 0.035)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            }
+            .overlay {
+                shape.strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            tint.opacity(dark ? 0.47 : 0.30),
+                            Color.primary.opacity(dark ? 0.10 : 0.05),
+                            companion.opacity(dark ? 0.22 : 0.13)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+            }
+            .shadow(
+                color: reduceTransparency ? .clear : tint.opacity(dark ? 0.12 : 0.07),
+                radius: 10,
+                y: 4
+            )
+    }
+}
+
+/// Acceso rápido sin filas planas: una cápsula de icono y un fondo teñido.
+/// La etiqueta siempre usa los colores dinámicos del sistema.
+private struct HomeQuickAccessRow: View {
+    let title: String
+    let symbol: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 39, height: 39)
+                .background(tint.opacity(0.15),
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer(minLength: 4)
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 13)
+        .frame(minHeight: 60)
+        .background(HomeTintedCardSurface(tint: tint, radius: 16, strength: 0.78))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
