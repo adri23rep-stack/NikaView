@@ -43,7 +43,7 @@ final class PrivateVaultDragState: ObservableObject {
 
     func move(to point: CGPoint) {
         guard isDragging else { return }
-        pointer = point
+        pointer.location = point
         refreshTarget(point)
     }
 
