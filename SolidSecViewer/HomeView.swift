@@ -218,6 +218,7 @@ struct HomeView: View {
                 .padding(.bottom, 24)
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { homeBottomDock }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $tourSource) { source in
             HomeFolderTourView(source: source, locations: locations)
@@ -361,6 +362,28 @@ struct HomeView: View {
         .accessibilityHidden(true)
     }
 
+    private var homeBottomDock: some View {
+        HStack(spacing: 4) {
+            Button { onOpenExplorer(.files) } label: { Image(systemName: "folder") }
+                .accessibilityLabel("Archivos")
+            Button { tourSource = .iPhone } label: { Image(systemName: "plus") }
+                .accessibilityLabel("Añadir carpeta")
+            Button { onOpenVault() } label: { Image(systemName: "lock.shield") }
+                .accessibilityLabel("Takopi Vault")
+            Button {
+                showSettingsHint = false
+                onOpenExplorer(.settings)
+            } label: { Image(systemName: "gearshape") }
+                .accessibilityLabel("Ajustes")
+        }
+        .buttonStyle(NikaidoGlassActionStyle())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .modifier(NikaidoGlassCapsule())
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
+    }
+
     // MARK: Encabezado
 
     private var header: some View {
@@ -371,12 +394,15 @@ struct HomeView: View {
                 }
                 onOpenExplorer(.settings)
             } label: {
-                NikaidoBrandMark(accent: nikaidoAccent, size: 48)
+                Image("TakopiLogo")
+                    .resizable()
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .buttonStyle(.plain)
             .offset(y: logoOffset)
             .accessibilityLabel("Abrir ajustes")
-            .accessibilityHint("Toca la letra N para configurar NikaView")
+            .accessibilityHint("Toca el pulpo para abrir ajustes")
             .overlay(alignment: .topLeading) {
                 if showSettingsHint {
                     Text("¡Hazme click!")
@@ -384,7 +410,7 @@ struct HomeView: View {
                         .foregroundStyle(nikaidoAccent)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(.regularMaterial, in: Capsule())
+                        .background(Color(uiColor: .secondarySystemBackground), in: Capsule())
                         .overlay(Capsule().strokeBorder(Color.primary.opacity(0.07)))
                         .fixedSize()
                         .offset(x: 29, y: -21)
@@ -395,20 +421,14 @@ struct HomeView: View {
             }
             .zIndex(1)
 
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 0) {
-                    Text("Nika")
-                        .tracking(-0.8)
-
-                    Text("View")
-                        .tracking(-0.8)
-                        .opacity(0.72)
-                }
-                .font(.system(size: 32, weight: .bold))
-
-                Text("TUS ARCHIVOS, A TU ESTILO")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .tracking(1.3)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Takopi Explorer")
+                    .font(.system(size: 25, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text("EXPLORADOR DE ARCHIVOS")
+                    .font(.system(size: 9, weight: .medium))
+                    .tracking(1.2)
                     .foregroundStyle(.secondary)
             }
 
@@ -560,7 +580,7 @@ struct HomeView: View {
                 )
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Nikaido Vault")
+                    Text("Takopi Vault")
                         .font(.system(size: 18, weight: .semibold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.76)
@@ -574,14 +594,7 @@ struct HomeView: View {
 
                 Spacer(minLength: 2)
 
-                // Dedicated decoration area: no bubbles on the logo or title.
-                HomeVaultBubbles(
-                    tint: .white,
-                    animated: !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
-                )
-                .frame(width: 43, height: 66)
-                .accessibilityHidden(true)
-                .allowsHitTesting(false)
+                // El remate fundido sobresale del borde, sin tapar el título.
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
@@ -608,10 +621,17 @@ struct HomeView: View {
                     .strokeBorder(.white.opacity(0.18), lineWidth: 1)
             }
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .shadow(color: nikaidoAccent.opacity(0.16), radius: 12, y: 5)
+            .overlay(alignment: .trailing) {
+                HomeVaultMelt(tint: nikaidoAccent, animated: motionEnabled)
+                    .frame(width: 52, height: 84)
+                    .offset(x: 13, y: 8)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+            .shadow(color: nikaidoAccent.opacity(0.12), radius: 8, y: 4)
         }
         .buttonStyle(NikaidoPressCardStyle())
-        .accessibilityLabel("Abrir Nikaido Vault")
+        .accessibilityLabel("Abrir Takopi Vault")
     }
 
     // MARK: Por tipo
