@@ -39,6 +39,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Prepare Takopi app icon
+        run: bash scripts/ci/prepare_takopi_icon.sh
+
       - name: Toolchain preflight
         run: |
           set -euo pipefail
