@@ -75,6 +75,7 @@ jobs:
           python3 scripts/ci/test_liquid_glass_v0120.py
           python3 scripts/ci/test_home_visual_v0121.py
           python3 scripts/ci/test_visual_identity_v0124.py
+          python3 scripts/ci/test_takopi_clean_ui_v0126.py
 
           if grep -R --line-number --fixed-strings "ContentUnavailableView" SolidSecViewer; then
             echo "ERROR: ContentUnavailableView requiere iOS 17+."
