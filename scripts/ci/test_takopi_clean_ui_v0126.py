@@ -19,7 +19,7 @@ checks = {
     "storage without decorative circles": "private struct HomeStorageCard" in home and "colors.first ?? .blue" in home,
     "vault glow contained": "HomeVaultMelt" not in home and "HomeVaultGlow" in home,
     "Explorer optional search header": "explorerTopBar" not in explorer and "paneHeader" in explorer,
-    "top header has no titles or action buttons": "Button {" not in pane and 'Text(pane.title)' not in pane and 'Text(pane.relativePath)' not in pane,
+    "top header has only requested selection control": 'Button(pane.selectionMode ? "Listo" : "Seleccionar")' in pane and "Button {" not in pane and 'Text(pane.relativePath)' not in pane,
     "bottom glass controls": "NikaidoGlassCapsule()" in dock and "toggleSplit()" in dock,
     "plus outside glass capsule": dock.find(".modifier(NikaidoGlassCapsule())") < dock.find("floatingAddButton"),
     "search still accessible": "searchingPaneIndex = activePane" in dock and "@Binding var showSearch: Bool" in explorer,
