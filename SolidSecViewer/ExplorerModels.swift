@@ -31,7 +31,7 @@ enum ExplorerStorageSource: Sendable {
 
     var title: String {
         switch self {
-        case .app: return "Nikaido Explorer"
+        case .app: return "Takopi Explorer"
         case .iCloud: return "iCloud Drive"
         case .iPhone: return "En mi iPhone"
         case .provider: return "Otro proveedor"
