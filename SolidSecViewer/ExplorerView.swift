@@ -2977,7 +2977,9 @@ private struct ExplorerResizableSplit<First: View, Second: View>: View {
     @GestureState private var translation: CGSize = .zero
     @Environment(\.nikaidoAccent) private var accent
 
-    private let handleSize: CGFloat = 44
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let handleSize: CGFloat = 16
 
     var body: some View {
         GeometryReader { proxy in
@@ -2991,20 +2993,24 @@ private struct ExplorerResizableSplit<First: View, Second: View>: View {
             if horizontal {
                 HStack(spacing: 0) {
                     first()
+                        .transaction { $0.animation = nil }
                         .frame(width: available * position)
                         .clipped()
                     handle(horizontal: true, available: available, position: position)
                     second()
+                        .transaction { $0.animation = nil }
                         .frame(width: available * (1 - position))
                         .clipped()
                 }
             } else {
                 VStack(spacing: 0) {
                     first()
+                        .transaction { $0.animation = nil }
                         .frame(height: available * position)
                         .clipped()
                     handle(horizontal: false, available: available, position: position)
                     second()
+                        .transaction { $0.animation = nil }
                         .frame(height: available * (1 - position))
                         .clipped()
                 }
@@ -3020,36 +3026,62 @@ private struct ExplorerResizableSplit<First: View, Second: View>: View {
     }
 
     private func handle(horizontal: Bool, available: CGFloat, position: CGFloat) -> some View {
-        ZStack {
-            Color(uiColor: .secondarySystemBackground)
-            Capsule()
-                .fill(translation == .zero ? Color.secondary.opacity(0.5) : accent)
-                .frame(width: horizontal ? 5 : 38, height: horizontal ? 38 : 5)
-        }
-        .frame(width: horizontal ? handleSize : nil, height: horizontal ? nil : handleSize)
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 3, coordinateSpace: .named("explorerSplit"))
-                .updating($translation) { value, state, _ in
-                    state = value.translation
+        Color.clear
+            .frame(width: horizontal ? handleSize : nil, height: horizontal ? nil : handleSize)
+            .overlay {
+                // Only the small central control captures touches; its invisible
+                // 44-point target remains comfortable without a thick separator.
+                ZStack {
+                    Color.clear
+                    Capsule()
+                        .fill(accent.opacity(0.65))
+                        .frame(width: horizontal ? 1.5 : 48, height: horizontal ? 48 : 1.5)
+                    Circle()
+                        .fill(accent)
+                        .frame(width: 6, height: 6)
                 }
-                .onEnded { value in
-                    let delta = horizontal ? value.translation.width : value.translation.height
-                    fraction = clamped(clamped(fraction, available: available) + delta / max(available, 1), available: available)
-                }
-        )
-        .onTapGesture(count: 2) { fraction = 0.5 }
+                .frame(width: horizontal ? 44 : 64, height: horizontal ? 64 : 44)
+                .contentShape(Rectangle())
+                .gesture(resizeGesture(horizontal: horizontal, available: available))
+                .onTapGesture(count: 2, perform: resetSize)
+            }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Tamaño de los paneles")
         .accessibilityValue("\(Int((position * 100).rounded())) por ciento para el panel \(horizontal ? "izquierdo" : "superior")")
         .accessibilityHint("Arrastra para ajustar. Toca dos veces para repartir el espacio por igual.")
         .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: fraction = clamped(fraction + 0.05, available: available)
-            case .decrement: fraction = clamped(fraction - 0.05, available: available)
-            @unknown default: break
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+                switch direction {
+                case .increment: fraction = clamped(fraction + 0.05, available: available)
+                case .decrement: fraction = clamped(fraction - 0.05, available: available)
+                @unknown default: break
+                }
             }
         }
-        .accessibilityAction(named: Text("Restablecer mitad y mitad")) { fraction = 0.5 }
+        .accessibilityAction(named: Text("Restablecer mitad y mitad")) { resetSize() }
+    }
+
+    private func resetSize() {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
+            fraction = 0.5
+        }
+    }
+
+    private func resizeGesture(horizontal: Bool, available: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 1, coordinateSpace: .named("explorerSplit"))
+            .updating($translation) { value, state, transaction in
+                // Track the finger directly. Do not queue implicit list animations
+                // or interpolate through stale sizes on every gesture sample.
+                transaction.animation = nil
+                state = value.translation
+            }
+            .onEnded { value in
+                let delta = horizontal ? value.translation.width : value.translation.height
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    fraction = clamped(clamped(fraction, available: available) + delta / max(available, 1), available: available)
+                }
+            }
     }
 }
