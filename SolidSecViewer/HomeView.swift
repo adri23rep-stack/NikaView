@@ -525,9 +525,8 @@ struct HomeView: View {
             .frame(height: 82)
             .background(HomeTintedCardSurface(
                 tint: nikaidoAccent,
-                secondary: .mint,
                 radius: 20,
-                strength: 1.05
+                strength: 1.0
             ))
             .foregroundStyle(.primary)
         }
@@ -659,7 +658,7 @@ struct HomeView: View {
                         .background(HomeTintedCardSurface(
                             tint: categoryTint(category.filter),
                             radius: 22,
-                            strength: 0.86
+                            strength: 0.82
                         ))
                         .foregroundStyle(.primary)
                     }
@@ -705,9 +704,8 @@ private struct HomeStorageCard: View {
             .foregroundStyle(.primary)
             .background(HomeTintedCardSurface(
                 tint: colors.first ?? .blue,
-                secondary: colors.last,
                 radius: 20,
-                strength: 1.15
+                strength: 1.05
             ))
         }
         .buttonStyle(NikaidoPressCardStyle())
@@ -723,15 +721,15 @@ private struct HomeTintedCardSurface: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     let tint: Color
-    var secondary: Color? = nil
     var radius: CGFloat = 20
     var strength: Double = 1.0
 
     var body: some View {
         let dark = scheme == .dark
-        let companion = secondary ?? tint
-        let start = (dark ? 0.36 : 0.21) * strength
-        let end = (dark ? 0.15 : 0.09) * strength
+        // Dos tonos de la misma familia, también para el acento personalizado.
+        let shadowTone = tint.nikaidoDarkened(0.74)
+        let primaryOpacity = (dark ? 0.18 : 0.12) * strength
+        let shadowOpacity = (dark ? 0.105 : 0.065) * strength
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
 
         shape
@@ -740,9 +738,8 @@ private struct HomeTintedCardSurface: View {
                 shape.fill(
                     LinearGradient(
                         colors: [
-                            tint.opacity(start),
-                            companion.opacity(end),
-                            tint.opacity(dark ? 0.08 : 0.035)
+                            tint.opacity(primaryOpacity),
+                            shadowTone.opacity(shadowOpacity)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -751,22 +748,15 @@ private struct HomeTintedCardSurface: View {
             }
             .overlay {
                 shape.strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            tint.opacity(dark ? 0.47 : 0.30),
-                            Color.primary.opacity(dark ? 0.10 : 0.05),
-                            companion.opacity(dark ? 0.22 : 0.13)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
+                    tint.opacity(dark ? 0.22 : 0.15),
+                    lineWidth: 0.8
                 )
             }
             .shadow(
-                color: reduceTransparency ? .clear : tint.opacity(dark ? 0.12 : 0.07),
-                radius: 10,
-                y: 4
+                color: reduceTransparency ? .clear
+                    : shadowTone.opacity(dark ? 0.08 : 0.045),
+                radius: 7,
+                y: 3
             )
     }
 }
@@ -801,7 +791,7 @@ private struct HomeQuickAccessRow: View {
         }
         .padding(.horizontal, 13)
         .frame(minHeight: 60)
-        .background(HomeTintedCardSurface(tint: tint, radius: 16, strength: 0.78))
+        .background(HomeTintedCardSurface(tint: tint, radius: 16, strength: 0.72))
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }

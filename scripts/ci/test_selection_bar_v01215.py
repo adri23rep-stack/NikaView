@@ -22,7 +22,7 @@ checks={
     "Vault actions accessible": 'accessibilityLabel("Mover seleccionados")' in b,
     "no deletion moved outside confirmation": "requestDelete(active.selectedItems" in a and "showBatchDeleteConfirmation = true" in b,
     "accent can be yellow with contrast": "accent.opacity(0.25)" in theme and ".foregroundStyle(.primary)" in theme,
-    "version 0.12.15":proj.count("MARKETING_VERSION = 0.12.16;")==2 and proj.count("CURRENT_PROJECT_VERSION = 53;")==2
+    "version 0.12.15":proj.count("MARKETING_VERSION = 0.12.17;")==2 and proj.count("CURRENT_PROJECT_VERSION = 54;")==2
 }
 for n,v in checks.items(): print(("[OK] " if v else "[FAIL] ")+n)
 assert all(checks.values()),"Compact selection toolbar regression"
