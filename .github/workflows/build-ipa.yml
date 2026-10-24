@@ -57,7 +57,7 @@ jobs:
             xcrun swiftc -frontend -swift-version 5 -parse "$source"
           done < <(find SolidSecViewer -maxdepth 1 -name '*.swift' -print | sort)
 
-          python3 -m py_compile tools/LANTransfer/send_sec_collection.py scripts/ci/audit_project.py scripts/ci/test_lifecycle_policy.py scripts/ci/test_inplace_video_policy.py scripts/ci/test_nikaido_reliability.py scripts/ci/test_diagnostics_v081.py scripts/ci/test_video_thumbnails_v082.py scripts/ci/test_explorer_core_v090.py scripts/ci/test_explorer_core_v010.py scripts/ci/test_vault_auth_global_files_v0104.py scripts/ci/test_accessibility_video_drag_v0111.py scripts/ci/test_inspector_pip_v0112.py scripts/ci/test_bidirectional_sync_v0113.py scripts/ci/test_video_clean_v0114.py scripts/ci/test_privacy_shield_v0115.py scripts/ci/test_liquid_glass_v0120.py scripts/ci/test_home_visual_v0121.py scripts/ci/test_visual_identity_v0124.py
+          python3 -m py_compile tools/LANTransfer/send_sec_collection.py scripts/ci/audit_project.py scripts/ci/test_lifecycle_policy.py scripts/ci/test_inplace_video_policy.py scripts/ci/test_nikaido_reliability.py scripts/ci/test_diagnostics_v081.py scripts/ci/test_video_thumbnails_v082.py scripts/ci/test_explorer_core_v090.py scripts/ci/test_explorer_core_v010.py scripts/ci/test_vault_auth_global_files_v0104.py scripts/ci/test_accessibility_video_drag_v0111.py scripts/ci/test_inspector_pip_v0112.py scripts/ci/test_bidirectional_sync_v0113.py scripts/ci/test_video_clean_v0114.py scripts/ci/test_privacy_shield_v0115.py scripts/ci/test_liquid_glass_v0120.py scripts/ci/test_home_visual_v0121.py scripts/ci/test_visual_identity_v0124.py scripts/ci/test_takopi_clean_ui_v0126.py
           python3 scripts/ci/audit_project.py
           python3 scripts/ci/test_lifecycle_policy.py
           python3 scripts/ci/test_inplace_video_policy.py
@@ -75,6 +75,7 @@ jobs:
           python3 scripts/ci/test_liquid_glass_v0120.py
           python3 scripts/ci/test_home_visual_v0121.py
           python3 scripts/ci/test_visual_identity_v0124.py
+          python3 scripts/ci/test_takopi_clean_ui_v0126.py
 
           if grep -R --line-number --fixed-strings "ContentUnavailableView" SolidSecViewer; then
             echo "ERROR: ContentUnavailableView requiere iOS 17+."

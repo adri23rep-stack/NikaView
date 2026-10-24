@@ -21,7 +21,7 @@ checks = {
     "N logo greeting retained": "await playLogoHop()" in home and 'Text("¡Hazme click!")' in home,
     "category icons share identity": "systemName: category.symbol" in home,
     "staggered entrances": home.count(".nikaidoHomeEntrance(") >= 4,
-    "glass is bottom only on Home": "homeBottomDock" in home and ".safeAreaInset(edge: .bottom" in home,
+    "Home is glass-free": "homeBottomDock" not in home and ".safeAreaInset(edge: .bottom" not in home,
     "Takopi image used": 'Image("TakopiLogo")' in home,
     "low power stops decoration": "ProcessInfo.processInfo.isLowPowerModeEnabled" in home,
     "reduced motion stops entrances": "!reduceMotion" in home and "enabled: motionEnabled" in home,
@@ -30,7 +30,7 @@ checks = {
     "screen switching animated": "withAnimation(.easeInOut(duration: 0.24))" in content and ".transition(" in content,
     "vault exit is not animated": "privateVault.lock()\n                        navigate(.home, animated: false)" in content,
     "screens still accessible": "onOpenExplorer: { kind in" in content and "onOpenVault: {" in content,
-    "build version updated": pbx.count("MARKETING_VERSION = 0.12.5;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 42;") == 2,
+    "build version updated": pbx.count("MARKETING_VERSION = 0.12.6;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 43;") == 2,
 }
 
 for label, passed in checks.items():
