@@ -23,7 +23,7 @@ checks = {
     "vault folder selection honored": "destinationFolderID: vaultSplitFolderID" in explorer and "parentID: destinationID" in explorer,
     "encryption bridge retained": "ExplorerVaultBridge.send(" in explorer,
     "copy and delete originals are separate": "performSendToVault(deleteOriginals: false)" in explorer and "performSendToVault(deleteOriginals: true)" in explorer,
-    "delete only after all encryptions": explorer.index("try ExplorerVaultBridge.send(") < explorer.index("try await ExplorerFileEngine.delete(items, root: root)"),
+    "delete only after all encryptions": explorer.index("try await ExplorerVaultBridge.send(") < explorer.index("try await ExplorerFileEngine.delete(items, root: root)"),
     "vault lock blocks deletion": "guard vault.isUnlocked else { throw PrivateVaultError.locked }" in explorer,
     "vault lock clears folder state": "currentFolderID = nil" in pane and "password = \"\"" in pane,
     "project includes both Swift views": "A970" in pbx and "B970" in pbx and "A971" in pbx and "B971" in pbx,
