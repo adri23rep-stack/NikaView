@@ -376,10 +376,8 @@ struct HomeView: View {
                 }
                 onOpenExplorer(.settings)
             } label: {
-                Image("TakopiLogo")
-                    .resizable()
+                TakopiOctopusMark()
                     .frame(width: 48, height: 48)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .buttonStyle(.plain)
             .offset(y: logoOffset)
