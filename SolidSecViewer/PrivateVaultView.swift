@@ -1159,7 +1159,7 @@ struct PrivateVaultView: View {
             .padding(6)
         }
         .buttonStyle(.plain)
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .topLeading) {
             if selectionMode {
                 Image(systemName: selectedVaultIDs.contains(entry.id)
                       ? "checkmark.circle.fill" : "circle")
@@ -1169,11 +1169,13 @@ struct PrivateVaultView: View {
                     .background(Circle().fill(.regularMaterial))
                     .padding(6)
                     .allowsHitTesting(false)
-            } else {
-                ExplorerDragHandle(callbacks: vaultDragCallbacks(for: entry))
-                    .background(.thinMaterial, in: Capsule())
-                    .padding(4)
             }
+        }
+        .overlay(alignment: .topTrailing) {
+            // El asa permanece visible aun con varios elementos seleccionados.
+            ExplorerDragHandle(callbacks: vaultDragCallbacks(for: entry))
+                .background(.thinMaterial, in: Capsule())
+                .padding(4)
         }
         .overlay(
             RoundedRectangle(cornerRadius: 12)
