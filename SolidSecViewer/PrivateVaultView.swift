@@ -868,21 +868,39 @@ struct PrivateVaultView: View {
     }
 
     private var vaultSelectionToolbar: some View {
-        HStack(spacing: 9) {
-            Text("\(selectedVaultIDs.count) seleccionados")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 3)
-            Button("Todos") {
-                selectedVaultIDs = Set(visibleChildren.map(\.id))
+        HStack(spacing: 7) {
+            TakopiSelectionCount(count: selectedVaultIDs.count)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                let allIDs = Set(visibleChildren.map(\.id))
+                if !allIDs.isEmpty && allIDs.isSubset(of: selectedVaultIDs) {
+                    selectedVaultIDs.subtract(allIDs)
+                } else {
+                    selectedVaultIDs.formUnion(allIDs)
+                }
+                NikaidoTheme.haptic(.light)
+            } label: {
+                TakopiSelectionActionIcon(
+                    systemName: !visibleChildren.isEmpty &&
+                        visibleChildren.allSatisfy { selectedVaultIDs.contains($0.id) }
+                        ? "checkmark.circle.fill" : "checkmark.circle"
+                )
             }
-            .font(.caption.weight(.medium))
+            .buttonStyle(.plain)
+            .accessibilityLabel(
+                !visibleChildren.isEmpty &&
+                    visibleChildren.allSatisfy { selectedVaultIDs.contains($0.id) }
+                    ? "Deseleccionar todos" : "Seleccionar todos"
+            )
+
             Button {
                 showBatchMovePicker = true
             } label: {
-                Label("Mover", systemImage: "folder")
+                TakopiSelectionActionIcon(systemName: "folder.fill", prominent: true)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Mover seleccionados")
             .disabled(selectedVaultIDs.isEmpty)
 
             Menu {
@@ -895,19 +913,22 @@ struct PrivateVaultView: View {
                         Label("Renombrar", systemImage: "pencil")
                     }
                 }
+
                 Button {
                     showBatchMovePicker = true
                 } label: {
                     Label("Mover a carpeta", systemImage: "folder.badge.plus")
                 }
+
                 Button(role: .destructive) {
                     showBatchDeleteConfirmation = true
                 } label: {
                     Label("Eliminar", systemImage: "trash")
                 }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                TakopiSelectionActionIcon(systemName: "ellipsis")
             }
+            .accessibilityLabel("Más acciones para seleccionados")
             .disabled(selectedVaultIDs.isEmpty)
         }
         .padding(.horizontal, 12)
