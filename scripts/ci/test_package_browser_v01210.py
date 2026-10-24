@@ -24,7 +24,7 @@ checks = {
     "ZIP de IPA y APK": 'case "zip", "ipa", "apk":' in archive,
     "Inspector APK": 'case "ipa", "apk", "zip"' in inspector,
     "Código incluido en Xcode": "A960" in project and "B960" in project,
-    "Versión correcta": project.count("MARKETING_VERSION = 0.12.14;") == 2 and project.count("CURRENT_PROJECT_VERSION = 51;") == 2,
+    "Versión correcta": project.count("MARKETING_VERSION = 0.12.15;") == 2 and project.count("CURRENT_PROJECT_VERSION = 52;") == 2,
 }
 for label, ok in checks.items():
     print(("[OK] " if ok else "[ERROR] ") + label)
