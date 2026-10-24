@@ -11,6 +11,7 @@ import UIKit
 enum ExplorerDropTarget {
     case folder(ExplorerFileItem, pane: Int)
     case pane(Int)
+    case vaultFolder(UUID)
     case location(ExplorerStorageLocation)
 }
 
@@ -54,12 +55,30 @@ final class ExplorerDragState: ObservableObject {
         let location: ExplorerStorageLocation
     }
 
+    private struct VaultFolderProbe {
+        weak var view: UIView?
+        let folderID: UUID
+    }
+
     private var folderProbes: [String: Probe] = [:]
     private var paneProbes: [Int: Probe] = [:]
     private var externalProbes: [String: ExternalProbe] = [:]
+    private var vaultFolderProbes: [String: VaultFolderProbe] = [:]
 
     static func folderKey(pane: Int, id: String) -> String {
         "\(pane)|\(id)"
+    }
+
+    static func vaultFolderKey(_ id: UUID) -> String {
+        "vault|\(id.uuidString)"
+    }
+
+    func registerVaultFolder(key: String, folderID: UUID, view: UIView?) {
+        if let view {
+            vaultFolderProbes[key] = VaultFolderProbe(view: view, folderID: folderID)
+        } else {
+            vaultFolderProbes.removeValue(forKey: key)
+        }
     }
 
     static func externalKey(_ id: UUID) -> String {
@@ -160,6 +179,8 @@ final class ExplorerDragState: ObservableObject {
             folderKey = Self.folderKey(pane: paneIndex, id: item.id)
         case .pane(let index)?:
             pane = index
+        case .vaultFolder(let folderID)?:
+            folderKey = Self.vaultFolderKey(folderID)
         case .location(let location)?:
             folderKey = Self.externalKey(location.id)
         case nil:
@@ -168,6 +189,9 @@ final class ExplorerDragState: ObservableObject {
 
         if highlightedFolderKey != folderKey {
             highlightedFolderKey = folderKey
+            if folderKey != nil {
+                NikaidoTheme.haptic(.light)
+            }
         }
 
         if highlightedPane != pane {
@@ -184,6 +208,15 @@ final class ExplorerDragState: ObservableObject {
 
             if view.convert(view.bounds, to: nil).contains(point) {
                 return .location(entry.location)
+            }
+        }
+
+        if sourcePane == 0 {
+            for entry in vaultFolderProbes.values {
+                guard let view = entry.view, view.window != nil else { continue }
+                if view.convert(view.bounds, to: nil).contains(point) {
+                    return .vaultFolder(entry.folderID)
+                }
             }
         }
 
@@ -316,6 +349,23 @@ extension View {
         )
     }
 
+    /// Cada carpeta cifrada es un destino distinto sin exponer su contenido.
+    @ViewBuilder
+    func explorerVaultFolderProbe(
+        _ state: ExplorerDragState,
+        entry: PrivateVaultEntry
+    ) -> some View {
+        if entry.kind == .folder && !entry.isSecCollectionFolder {
+            background(
+                ExplorerFrameProbe(key: ExplorerDragState.vaultFolderKey(entry.id)) { key, view in
+                    state.registerVaultFolder(key: key, folderID: entry.id, view: view)
+                }
+            )
+        } else {
+            self
+        }
+    }
+
     /// Marca todo un panel como destino posible de un arrastre.
     func explorerPaneProbe(
         _ state: ExplorerDragState,
@@ -340,14 +390,15 @@ struct ExplorerDragHandle: View {
         Image(systemName: "line.3.horizontal")
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(.tertiary)
-            .frame(width: 34, height: 40)
+            .frame(width: 44, height: 44)
             .contentShape(Rectangle())
             .gesture(dragGesture)
-            .accessibilityLabel("Arrastrar a una carpeta o al otro panel")
+            .accessibilityLabel("Mover archivo")
+            .accessibilityHint("Mantén presionado y arrastra hasta la carpeta o la bóveda")
     }
 
     private var dragGesture: some Gesture {
-        LongPressGesture(minimumDuration: 0.25)
+        LongPressGesture(minimumDuration: 0.18)
             .sequenced(
                 before: DragGesture(
                     minimumDistance: 0,
@@ -405,13 +456,21 @@ struct ExplorerDragGhostLayer: View {
             Image(systemName: first.systemImage)
                 .foregroundStyle(nikaidoAccent)
 
-            Text(
-                dragState.items.count == 1
-                ? first.name
-                : "\(dragState.items.count) elementos"
-            )
-            .font(.subheadline.weight(.medium))
-            .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(
+                    dragState.items.count == 1
+                    ? first.name
+                    : "\(dragState.items.count) elementos"
+                )
+                .font(.subheadline.weight(.medium))
+                .lineLimit(1)
+                Text(dragState.highlightedPane != nil ? "Suelta aquí"
+                     : dragState.highlightedFolderKey != nil ? "Soltar en carpeta"
+                     : "Lleva al panel de destino")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

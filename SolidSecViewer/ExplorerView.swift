@@ -168,7 +168,12 @@ struct ExplorerView: View {
                                 dragState: dragState,
                                 onOpenFullVault: onOpenVault,
                                 onSwitchToFiles: showTwoFilePanes,
-                                onFilesDropped: handleVaultDrop
+                                onFilesDropped: { providers in
+                                    handleVaultDrop(providers)
+                                },
+                                onFilesDroppedToFolder: { providers, id in
+                                    handleVaultDrop(providers, destinationFolderID: id)
+                                }
                             )
                             .environmentObject(privateVault)
                         } else {
@@ -321,7 +326,7 @@ struct ExplorerView: View {
                 vaultSendDestinationID = nil
             }
         } message: {
-            Text("Los archivos se cifran en la carpeta elegida. Elige si deseas conservar o borrar los originales después de importar correctamente.")
+            Text("Destino: \(privateVault.folderName(vaultSendDestinationID)). Primero se cifran los archivos. Puedes conservar o borrar los originales.")
         }
         .alert(
             spaceNotice?.title ?? "Espacio",
@@ -625,6 +630,22 @@ struct ExplorerView: View {
                     Image(systemName: splitOpen ? "rectangle" : "rectangle.split.1x2")
                 }
                 .accessibilityLabel(splitOpen ? "Un solo panel" : "Dividir pantalla")
+
+                Button {
+                    if vaultPaneOpen {
+                        showTwoFilePanes()
+                    } else {
+                        openVaultSplit()
+                    }
+                    NikaidoTheme.haptic(.light)
+                } label: {
+                    Image(systemName: vaultPaneOpen ? "lock.open.fill" : "lock.shield")
+                        .foregroundStyle(vaultPaneOpen ? nikaidoAccent : .primary)
+                }
+                .accessibilityLabel(vaultPaneOpen
+                    ? "Volver a dos paneles de archivos"
+                    : "Abrir Takopi Vault en pantalla dividida")
+                .accessibilityHint("Alterna entre archivos y bóveda sin salir de Liquid Glass")
 
             Menu {
                 Button {
@@ -1025,8 +1046,8 @@ struct ExplorerView: View {
         }
 
         let title = items.count == 1
-            ? "Mover \(items[0].name) a la bóveda"
-            : "Mover \(items.count) elementos a la bóveda"
+            ? "\(deleteOriginals ? "Mover" : "Copiar") \(items[0].name) a la bóveda"
+            : "\(deleteOriginals ? "Mover" : "Copiar") \(items.count) elementos a la bóveda"
 
         let vault = privateVault
 
@@ -1650,20 +1671,26 @@ struct ExplorerView: View {
 
     /// Soltar con el asa de arrastre: sobre una carpeta o sobre el otro panel.
     private func performDrop(_ request: ExplorerDropRequest) {
-        if case .pane(let index) = request.target,
-           index == 1, splitOpen, vaultPaneOpen, request.sourcePane == 0 {
+        switch request.target {
+        case .vaultFolder(let id) where splitOpen && vaultPaneOpen && request.sourcePane == 0:
+            requestSendToVault(request.items, paneIndex: 0, destinationFolderID: id)
+        case .pane(let index) where index == 1 && splitOpen && vaultPaneOpen
+                                    && request.sourcePane == 0:
             requestSendToVault(
                 request.items,
                 paneIndex: request.sourcePane,
                 destinationFolderID: vaultSplitFolderID
             )
-        } else {
+        default:
             pendingDrop = request
         }
     }
 
     /// Arrastre nativo opcional, usa el mismo token seguro que Takopi Files.
-    private func handleVaultDrop(_ providers: [NSItemProvider]) -> Bool {
+    private func handleVaultDrop(
+        _ providers: [NSItemProvider],
+        destinationFolderID: UUID? = nil
+    ) -> Bool {
         guard splitOpen, vaultPaneOpen, privateVault.isUnlocked else { return false }
         Task {
             do {
@@ -1675,7 +1702,11 @@ struct ExplorerView: View {
                     globalError = "No se encontraron todos los archivos originales del arrastre."
                     return
                 }
-                requestSendToVault(items, paneIndex: 0, destinationFolderID: vaultSplitFolderID)
+                requestSendToVault(
+                    items,
+                    paneIndex: 0,
+                    destinationFolderID: destinationFolderID ?? vaultSplitFolderID
+                )
             } catch {
                 globalError = ExplorerErrorText.message(for: error)
             }
@@ -1687,6 +1718,9 @@ struct ExplorerView: View {
         guard let request = pendingDrop else { return }
         pendingDrop = nil
         switch request.target {
+        case .vaultFolder(let folderID):
+            guard vaultPaneOpen, splitOpen, request.sourcePane == 0 else { return }
+            requestSendToVault(request.items, paneIndex: 0, destinationFolderID: folderID)
         case .folder(let folder, let paneIndex):
             moveItems(
                 request.items,
