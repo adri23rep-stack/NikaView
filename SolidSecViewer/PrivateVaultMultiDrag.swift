@@ -105,6 +105,16 @@ final class PrivateVaultDragState: ObservableObject {
 }
 
 extension View {
+    @ViewBuilder
+    func vaultMoveFolderProbe(_ state: PrivateVaultDragState,
+                             entry: PrivateVaultEntry) -> some View {
+        if entry.kind == .folder && !entry.isSecCollectionFolder {
+            vaultMoveProbe(state, key: "folder|\(entry.id.uuidString)", folderID: entry.id)
+        } else {
+            self
+        }
+    }
+
     func vaultMoveProbe(_ state: PrivateVaultDragState,
                        key: String, folderID: UUID?) -> some View {
         background(
