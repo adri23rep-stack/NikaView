@@ -103,6 +103,7 @@ struct ExplorerView: View {
 
     /// El segundo panel solo aparece cuando lo necesitas.
     @State private var splitOpen = false
+    @State private var splitFraction: CGFloat = 0.5
     @State private var splitHint: String?
     @State private var showFileImporter = false
     @State private var editorTarget: ExplorerEditorTarget?
@@ -153,33 +154,11 @@ struct ExplorerView: View {
                         active,
                         index: activePane
                     )
-                } else if proxy.size.width >= 700 {
-                    HStack(spacing: 0) {
-                        paneView(
-                            leftPane,
-                            index: 0
-                        )
-
-                        Divider()
-
-                        paneView(
-                            rightPane,
-                            index: 1
-                        )
-                    }
                 } else {
-                    VStack(spacing: 0) {
-                        paneView(
-                            leftPane,
-                            index: 0
-                        )
-
-                        Divider()
-
-                        paneView(
-                            rightPane,
-                            index: 1
-                        )
+                    ExplorerResizableSplit(fraction: $splitFraction) {
+                        paneView(leftPane, index: 0)
+                    } second: {
+                        paneView(rightPane, index: 1)
                     }
                 }
 
@@ -2989,3 +2968,88 @@ private struct ExplorerPreviewTarget: Identifiable {
     let url: URL
 }
 
+
+/// Layout-only resizing: pane identities, selections and file operations stay intact.
+private struct ExplorerResizableSplit<First: View, Second: View>: View {
+    @Binding var fraction: CGFloat
+    @ViewBuilder let first: () -> First
+    @ViewBuilder let second: () -> Second
+    @GestureState private var translation: CGSize = .zero
+    @Environment(\.nikaidoAccent) private var accent
+
+    private let handleSize: CGFloat = 44
+
+    var body: some View {
+        GeometryReader { proxy in
+            let horizontal = proxy.size.width >= 700
+            let extent = horizontal ? proxy.size.width : proxy.size.height
+            let available = max(0, extent - handleSize)
+            let delta = horizontal ? translation.width : translation.height
+            let base = clamped(fraction, available: available)
+            let position = clamped(base + delta / max(available, 1), available: available)
+
+            if horizontal {
+                HStack(spacing: 0) {
+                    first()
+                        .frame(width: available * position)
+                        .clipped()
+                    handle(horizontal: true, available: available, position: position)
+                    second()
+                        .frame(width: available * (1 - position))
+                        .clipped()
+                }
+            } else {
+                VStack(spacing: 0) {
+                    first()
+                        .frame(height: available * position)
+                        .clipped()
+                    handle(horizontal: false, available: available, position: position)
+                    second()
+                        .frame(height: available * (1 - position))
+                        .clipped()
+                }
+            }
+        }
+        .coordinateSpace(name: "explorerSplit")
+    }
+
+    private func clamped(_ value: CGFloat, available: CGFloat) -> CGFloat {
+        // Keep both panels usable, including short layouts with the keyboard open.
+        let minimum = min(0.5, max(0.2, 96 / max(available, 1)))
+        return min(1 - minimum, max(minimum, value))
+    }
+
+    private func handle(horizontal: Bool, available: CGFloat, position: CGFloat) -> some View {
+        ZStack {
+            Color(uiColor: .secondarySystemBackground)
+            Capsule()
+                .fill(translation == .zero ? Color.secondary.opacity(0.5) : accent)
+                .frame(width: horizontal ? 5 : 38, height: horizontal ? 38 : 5)
+        }
+        .frame(width: horizontal ? handleSize : nil, height: horizontal ? nil : handleSize)
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 3, coordinateSpace: .named("explorerSplit"))
+                .updating($translation) { value, state, _ in
+                    state = value.translation
+                }
+                .onEnded { value in
+                    let delta = horizontal ? value.translation.width : value.translation.height
+                    fraction = clamped(clamped(fraction, available: available) + delta / max(available, 1), available: available)
+                }
+        )
+        .onTapGesture(count: 2) { fraction = 0.5 }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Tamaño de los paneles")
+        .accessibilityValue("\(Int((position * 100).rounded())) por ciento para el panel \(horizontal ? "izquierdo" : "superior")")
+        .accessibilityHint("Arrastra para ajustar. Toca dos veces para repartir el espacio por igual.")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: fraction = clamped(fraction + 0.05, available: available)
+            case .decrement: fraction = clamped(fraction - 0.05, available: available)
+            @unknown default: break
+            }
+        }
+        .accessibilityAction(named: Text("Restablecer mitad y mitad")) { fraction = 0.5 }
+    }
+}
