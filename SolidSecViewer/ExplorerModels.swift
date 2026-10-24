@@ -102,7 +102,7 @@ struct ExplorerFileItem: Identifiable, Hashable, Sendable {
     }
 
     var isArchive: Bool {
-        ["zip", "7z", "rar"].contains(pathExtension)
+        ["zip", "7z", "rar", "ipa", "apk"].contains(pathExtension)
     }
 
     var isImage: Bool {
@@ -118,6 +118,10 @@ struct ExplorerFileItem: Identifiable, Hashable, Sendable {
         ].contains(pathExtension)
     }
 
+    var isAppPackage: Bool {
+        !isDirectory && ["ipa", "apk"].contains(pathExtension)
+    }
+
     var hasMediaThumbnail: Bool {
         isImage || isVideo
     }
@@ -128,6 +132,8 @@ struct ExplorerFileItem: Identifiable, Hashable, Sendable {
         }
 
         switch pathExtension {
+        case "ipa", "apk":
+            return "app.fill"
         case "zip", "7z", "rar":
             return "archivebox.fill"
         case "jpg", "jpeg", "png", "gif", "webp", "heic", "heif":
