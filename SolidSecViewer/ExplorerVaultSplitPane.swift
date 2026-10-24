@@ -12,9 +12,11 @@ struct ExplorerVaultSplitPane: View {
     let onOpenFullVault: () -> Void
     let onSwitchToFiles: () -> Void
     let onFilesDropped: ([NSItemProvider]) -> Bool
+    let onFilesDroppedToFolder: ([NSItemProvider], UUID) -> Bool
 
     @State private var password = ""
     @State private var isDropTargeted = false
+    @State private var targetedFolderID: UUID?
 
     private var children: [PrivateVaultEntry] {
         guard vault.isUnlocked else { return [] }
@@ -187,10 +189,32 @@ struct ExplorerVaultSplitPane: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(accent.opacity(
+                                    dragState.highlightedFolderKey == ExplorerDragState.vaultFolderKey(entry.id)
+                                    || targetedFolderID == entry.id ? 0.20 : 0
+                                ))
+                        )
+                        .explorerVaultFolderProbe(dragState, entry: entry)
+                        .onDrop(
+                            of: entry.kind == .folder && !entry.isSecCollectionFolder
+                                ? [UTType.plainText.identifier] : [],
+                            isTargeted: Binding(
+                                get: { targetedFolderID == entry.id },
+                                set: { targetedFolderID = $0 ? entry.id : nil }
+                            )
+                        ) { providers in
+                            guard vault.isUnlocked, entry.kind == .folder,
+                                  !entry.isSecCollectionFolder else { return false }
+                            return onFilesDroppedToFolder(providers, entry.id)
+                        }
                     }
                 }
                 .padding(.vertical, 6)
             }
+            .background(ExplorerDragEdgeScroll(state: dragState))
+            .scrollDisabled(dragState.isDragging)
 
             HStack(spacing: 6) {
                 Image(systemName: "arrow.down.doc")
