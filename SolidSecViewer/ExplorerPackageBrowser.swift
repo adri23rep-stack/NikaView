@@ -2,6 +2,29 @@ import SwiftUI
 import ZIPFoundation
 import UIKit
 
+/// Evita volver a descomprimir los iconos al desplazarse por listas grandes.
+final class ExplorerPackageIconStore {
+    static let shared = ExplorerPackageIconStore()
+    private let lock = NSLock()
+    private var resolved: [String: UIImage] = [:]
+    private var missing = Set<String>()
+
+    func icon(for url: URL) -> UIImage? {
+        let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+        let key = url.path + "|" + String(values?.fileSize ?? 0) + "|" +
+            String(values?.contentModificationDate?.timeIntervalSince1970 ?? 0)
+        lock.lock()
+        if let icon = resolved[key] { lock.unlock(); return icon }
+        if missing.contains(key) { lock.unlock(); return nil }
+        lock.unlock()
+        let icon = (try? ExplorerPackageArchive.read(url))?.details.icon
+        lock.lock()
+        if let icon { resolved[key] = icon } else { missing.insert(key) }
+        lock.unlock()
+        return icon
+    }
+}
+
 /// Exploración sin ejecutar ni instalar paquetes. La extracción individual
 /// escribe a un archivo temporal y solo lo publica tras verificarse el ZIP.
 enum ExplorerPackageArchive {
@@ -299,7 +322,7 @@ struct ExplorerPackageBrowserView: View {
                 }
                 if let message {
                     Section {
-                        Text(message).foregroundStyle(failed ? .red : .secondary)
+                        Text(message).foregroundStyle(failed ? Color.red : Color.secondary)
                             .font(.footnote)
                     }
                 }
