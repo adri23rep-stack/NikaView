@@ -42,6 +42,12 @@ struct PrivateVaultView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var currentFolderID: UUID?
+    @State private var selectionMode = false
+    @State private var selectedVaultIDs: Set<UUID> = []
+    @StateObject private var vaultDrag = PrivateVaultDragState()
+    @State private var pendingVaultDrag: PrivateVaultDrop?
+    @State private var showBatchMovePicker = false
+    @State private var showBatchDeleteConfirmation = false
     @State private var showImporter = false
     @State private var showPhotoPicker = false
     @State private var offerDeletePhotos = false
@@ -164,6 +170,44 @@ struct PrivateVaultView: View {
             NikaidoMoveDestinationView(entry: entry)
                 .environmentObject(vault)
         }
+        .sheet(isPresented: $showBatchMovePicker) {
+            PrivateVaultBatchDestinationPicker(movingIDs: selectedVaultIDs) { folderID in
+                moveSelectedVaultEntries(selectedVaultIDs, to: folderID)
+            }
+            .environmentObject(vault)
+        }
+        .confirmationDialog(
+            "Mover archivos cifrados",
+            isPresented: Binding(
+                get: { pendingVaultDrag != nil },
+                set: { if !$0 { pendingVaultDrag = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Mover a carpeta") {
+                if let pendingVaultDrag {
+                    moveSelectedVaultEntries(pendingVaultDrag.ids, to: pendingVaultDrag.folderID)
+                }
+                pendingVaultDrag = nil
+            }
+            Button("Cancelar", role: .cancel) { pendingVaultDrag = nil }
+        } message: {
+            Text("Se moverán dentro de Takopi Vault sin descifrar los archivos.")
+        }
+        .confirmationDialog("Eliminar seleccionados",
+            isPresented: $showBatchDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Eliminar \(selectedVaultIDs.count) elementos", role: .destructive) {
+                let items = vault.entries.filter { selectedVaultIDs.contains($0.id) }
+                for entry in items { vault.delete(entry) }
+                selectedVaultIDs.removeAll()
+                selectionMode = false
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("Las carpetas seleccionadas también eliminarán su contenido.")
+        }
         .sheet(isPresented: $showExporter, onDismiss: {
             vault.releaseTemporaryPlaintext(exportURL)
             exportURL = nil
@@ -176,6 +220,10 @@ struct PrivateVaultView: View {
         }
         .onReceive(vault.$isUnlocked) { unlocked in
             if !unlocked {
+                selectedVaultIDs.removeAll()
+                selectionMode = false
+                pendingVaultDrag = nil
+                vaultDrag.cancel()
                 thumbnailsRevealed = false
                 pendingProtectedAction = nil
                 showFilePasswordPrompt = false
@@ -186,6 +234,10 @@ struct PrivateVaultView: View {
         .onReceive(NotificationCenter.default.publisher(
             for: UIApplication.didEnterBackgroundNotification
         )) { _ in
+            selectedVaultIDs.removeAll()
+            selectionMode = false
+            pendingVaultDrag = nil
+            vaultDrag.cancel()
             selectedEntry = nil
             selectedSecZip = nil
             selectedSecFolder = nil
@@ -694,6 +746,11 @@ struct PrivateVaultView: View {
             browserHeader
             Divider()
 
+            if selectionMode {
+                vaultSelectionToolbar
+                Divider()
+            }
+
             if visibleChildren.isEmpty {
                 VStack(spacing: 16) {
                     Spacer()
@@ -729,6 +786,7 @@ struct PrivateVaultView: View {
                     }
                     .padding(10)
                 }
+                .vaultMoveProbe(vaultDrag, key: "background|vault", folderID: currentFolderID)
             }
 
             if vault.isBusy || isPreparingExport || photoImport.isImporting {
@@ -748,6 +806,9 @@ struct PrivateVaultView: View {
                     .padding(.bottom, 6)
             }
         }
+        .overlay {
+            PrivateVaultDragPreview(drag: vaultDrag, pointer: vaultDrag.pointer)
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             browserActions
                 .padding(.horizontal, 16)
@@ -765,20 +826,33 @@ struct PrivateVaultView: View {
         VStack(spacing: 10) {
             // Keep the folder title OUTSIDE the actions so it never wraps
             // one word into several lines on a narrow iPhone.
-            VStack(alignment: .leading, spacing: 3) {
-                Text(vault.folderName(currentFolderID))
-                    .font(.title3.weight(.semibold))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .minimumScaleFactor(0.8)
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(vault.folderName(currentFolderID))
+                        .font(.title3.weight(.semibold))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .minimumScaleFactor(0.8)
 
-                Text("\(visibleChildren.count) elementos")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    Text("\(visibleChildren.count) elementos")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 3)
+                Button(selectionMode ? "Listo" : "Seleccionar") {
+                    selectionMode.toggle()
+                    if !selectionMode { selectedVaultIDs.removeAll() }
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(nikaidoAccent)
+                .accessibilityLabel(selectionMode ? "Terminar selección" : "Seleccionar archivos de la bóveda")
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
+            .vaultMoveProbe(
+                vaultDrag,
+                key: "parent|vault",
+                folderID: currentFolderID == nil ? nil : vault.parent(of: currentFolderID)
+            )
 
 
             if vault.pendingTransferCount > 0 {
@@ -793,6 +867,83 @@ struct PrivateVaultView: View {
         .padding(.bottom, 10)
     }
 
+    private var vaultSelectionToolbar: some View {
+        HStack(spacing: 9) {
+            Text("\(selectedVaultIDs.count) seleccionados")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 3)
+            Button("Todos") {
+                selectedVaultIDs = Set(visibleChildren.map(\.id))
+            }
+            .font(.caption.weight(.medium))
+            Button {
+                showBatchMovePicker = true
+            } label: {
+                Label("Mover", systemImage: "folder")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(selectedVaultIDs.isEmpty)
+
+            Menu {
+                if selectedVaultIDs.count == 1,
+                   let only = vault.entries.first(where: { selectedVaultIDs.contains($0.id) }) {
+                    Button {
+                        renameText = only.name
+                        entryToRename = only
+                    } label: {
+                        Label("Renombrar", systemImage: "pencil")
+                    }
+                }
+                Button {
+                    showBatchMovePicker = true
+                } label: {
+                    Label("Mover a carpeta", systemImage: "folder.badge.plus")
+                }
+                Button(role: .destructive) {
+                    showBatchDeleteConfirmation = true
+                } label: {
+                    Label("Eliminar", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .disabled(selectedVaultIDs.isEmpty)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+    }
+
+    private func moveSelectedVaultEntries(_ ids: Set<UUID>, to folderID: UUID?) {
+        do {
+            try vault.moveEntries(ids, to: folderID)
+            selectedVaultIDs.subtract(ids)
+            if selectedVaultIDs.isEmpty { selectionMode = false }
+            NikaidoTheme.haptic(.light)
+        } catch {
+            explorerNotice = error.localizedDescription
+        }
+    }
+
+    private func vaultDragCallbacks(for entry: PrivateVaultEntry) -> ExplorerDragCallbacks {
+        ExplorerDragCallbacks(
+            began: { point in
+                let ids: Set<UUID> = selectedVaultIDs.contains(entry.id)
+                    ? selectedVaultIDs : [entry.id]
+                vaultDrag.begin(ids: ids, originFolderID: currentFolderID, at: point)
+                NikaidoTheme.haptic(.medium)
+            },
+            moved: { point in vaultDrag.move(to: point) },
+            ended: { point, completed in
+                if completed {
+                    pendingVaultDrag = vaultDrag.finish(at: point)
+                } else {
+                    vaultDrag.cancel()
+                }
+            }
+        )
+    }
+
     // Floating Liquid Glass actions stay reachable at the bottom of the vault.
     private var browserActions: some View {
         HStack(spacing: 2) {
@@ -803,6 +954,7 @@ struct PrivateVaultView: View {
                     onHome()
                 } else {
                     currentFolderID = vault.parent(of: currentFolderID)
+                    selectedVaultIDs.removeAll()
                 }
             } label: {
                 Image(systemName: currentFolderID == nil ? "house" : "chevron.left")
@@ -944,12 +1096,19 @@ struct PrivateVaultView: View {
     @ViewBuilder
     private func entryCard(_ entry: PrivateVaultEntry) -> some View {
         Button {
-            if entry.isSecCollectionFolder {
+            if selectionMode {
+                if selectedVaultIDs.contains(entry.id) {
+                    selectedVaultIDs.remove(entry.id)
+                } else {
+                    selectedVaultIDs.insert(entry.id)
+                }
+            } else if entry.isSecCollectionFolder {
                 // The .sec viewer prompts for its own password or Face ID.
                 selectedSecFolder = entry
             } else if entry.kind == .folder {
                 vaultSearch = ""
                 currentFolderID = entry.id
+                selectedVaultIDs.removeAll()
             } else if entry.isImage || entry.isVideo {
                 protectedOpen("Abrir \(entry.name)") {
                     selectedEntry = entry
@@ -1000,6 +1159,31 @@ struct PrivateVaultView: View {
             .padding(6)
         }
         .buttonStyle(.plain)
+        .overlay(alignment: .topLeading) {
+            if selectionMode {
+                Image(systemName: selectedVaultIDs.contains(entry.id)
+                      ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
+                    .foregroundStyle(selectedVaultIDs.contains(entry.id)
+                                     ? nikaidoAccent : Color.secondary)
+                    .background(Circle().fill(.regularMaterial))
+                    .padding(6)
+                    .allowsHitTesting(false)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            // El asa permanece visible aun con varios elementos seleccionados.
+            ExplorerDragHandle(callbacks: vaultDragCallbacks(for: entry))
+                .background(.thinMaterial, in: Capsule())
+                .padding(4)
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(nikaidoAccent, lineWidth:
+                    vaultDrag.highlightedKey == "folder|\(entry.id.uuidString)" ? 2 : 0)
+                .allowsHitTesting(false)
+        )
+        .vaultMoveFolderProbe(vaultDrag, entry: entry)
         .contextMenu {
             if entry.isSecCollectionFolder {
                 Button {

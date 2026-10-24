@@ -1119,6 +1119,51 @@ final class PrivateVaultSession: ObservableObject {
         }
     }
 
+    /// Cambia solamente referencias del índice cifrado. No descifra ni
+    /// duplica los contenidos, y el lote se confirma en una sola escritura.
+    func moveEntries(_ ids: Set<UUID>, to parentID: UUID?) throws {
+        try requireUnlocked()
+        guard !ids.isEmpty else { return }
+        let moving = entries.filter { ids.contains($0.id) }
+        guard moving.count == ids.count else { throw PrivateVaultError.entryNotFound }
+
+        if let parentID {
+            guard entries.contains(where: {
+                $0.id == parentID && $0.kind == .folder && !$0.isSecCollectionFolder
+            }) else { throw PrivateVaultError.entryNotFound }
+        }
+
+        for entry in moving {
+            if entry.kind == .folder, let parentID,
+               descendantIDs(startingAt: entry).contains(parentID) {
+                throw PrivateVaultError.indexInvalid
+            }
+        }
+
+        let names = moving.map { $0.name.lowercased() }
+        guard Set(names).count == names.count else {
+            throw PrivateVaultError.alreadyExists
+        }
+
+        let occupied = Set(entries.filter {
+            $0.parentID == parentID && !ids.contains($0.id)
+        }.map { $0.name.lowercased() })
+        guard moving.allSatisfy({ !occupied.contains($0.name.lowercased()) }) else {
+            throw PrivateVaultError.alreadyExists
+        }
+
+        let candidate = entries.map { entry -> PrivateVaultEntry in
+            var updated = entry
+            if ids.contains(updated.id) { updated.parentID = parentID }
+            return updated
+        }
+
+        try persistIndex(candidate)
+        entries = candidate
+        errorMessage = nil
+        refreshOperationalStatus()
+    }
+
     func refreshOperationalStatus() {
         guard isUnlocked else {
             pendingTransferCount = 0

@@ -1984,9 +1984,7 @@ struct ExplorerPaneView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if showSearch || !pane.search.isEmpty {
-                paneHeader
-            }
+            paneHeader
 
             if pane.isLoading && pane.items.isEmpty {
                 Spacer()
@@ -2023,6 +2021,25 @@ struct ExplorerPaneView: View {
     // Un solo encabezado para cada panel: nombre/ruta sin botones duplicados.
     private var paneHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 7) {
+                Text(pane.title)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 3)
+                Button(pane.selectionMode ? "Listo" : "Seleccionar") {
+                    onActivate()
+                    pane.selectionMode.toggle()
+                    if !pane.selectionMode { pane.clearSelection() }
+                    NikaidoTheme.haptic(.light)
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(nikaidoAccent)
+                .disabled(pane.currentURL == nil)
+                .accessibilityLabel(pane.selectionMode
+                    ? "Terminar selección" : "Seleccionar varios archivos")
+            }
             if showSearch || !pane.search.isEmpty {
                 NikaidoSearchField(
                     text: $pane.search,
@@ -2034,9 +2051,9 @@ struct ExplorerPaneView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
-        .padding(.bottom, 10)
+        .padding(.horizontal, 14)
+        .padding(.top, 7)
+        .padding(.bottom, 7)
     }
 
     @ViewBuilder
