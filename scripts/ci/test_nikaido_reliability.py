@@ -23,8 +23,8 @@ def fail(message):
     print("NIKAIDO RELIABILITY GUARD: FAIL -", message)
     raise SystemExit(1)
 
-if "<string>Nikaido Explorer</string>" not in info:
-    fail("CFBundleDisplayName no es Nikaido Explorer")
+if "<string>Takopi Explorer</string>" not in info:
+    fail("CFBundleDisplayName no es Takopi Explorer")
 
 if "PRODUCT_BUNDLE_IDENTIFIER = com.teamnikaido.solidsecviewer;" not in pbx:
     fail("Bundle ID cambió; se perdería continuidad del data container")
