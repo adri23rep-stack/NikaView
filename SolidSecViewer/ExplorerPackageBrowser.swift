@@ -17,7 +17,14 @@ final class ExplorerPackageIconStore {
         if let icon = resolved[key] { lock.unlock(); return icon }
         if missing.contains(key) { lock.unlock(); return nil }
         lock.unlock()
-        let icon = (try? ExplorerPackageArchive.read(url))?.details.icon
+        // Al listar un IPA grande no competimos con su apertura:
+        // el detalle/icono se carga después de publicar el índice.
+        let icon: UIImage?
+        if (values?.fileSize ?? 0) > 512 * 1024 * 1024 {
+            icon = nil
+        } else {
+            icon = (try? ExplorerPackageArchive.read(url))?.details.icon
+        }
         lock.lock()
         if let icon { resolved[key] = icon } else { missing.insert(key) }
         lock.unlock()
@@ -78,7 +85,63 @@ enum ExplorerPackageArchive {
         return parts
     }
 
+    /// ZIPFoundation busca la firma de cierre desde el final del archivo.
+    /// Si un IPA está incompleto puede recorrer sus gigabytes byte a byte.
+    /// Comprobamos únicamente los últimos 65 KiB (ZIP + comentario máximo).
+    static func verifyZipTail(_ url: URL) throws {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let size = try handle.seekToEnd()
+        let window = Int(min(size, 65_557))
+        guard window >= 22 else {
+            throw ExplorerOperationError.operationFailed("Paquete incompleto o no es ZIP.")
+        }
+        try handle.seek(toOffset: size - UInt64(window))
+        let tail = try handle.read(upToCount: window) ?? Data()
+        guard tail.count >= 22 else {
+            throw ExplorerOperationError.operationFailed("No se pudo leer el final del paquete.")
+        }
+        for offset in stride(from: tail.count - 22, through: 0, by: -1) {
+            if tail[offset] == 0x50 && tail[offset + 1] == 0x4B &&
+               tail[offset + 2] == 0x05 && tail[offset + 3] == 0x06 {
+                let commentLength = Int(tail[offset + 20]) |
+                    (Int(tail[offset + 21]) << 8)
+                if offset + 22 + commentLength == tail.count { return }
+            }
+        }
+        throw ExplorerOperationError.operationFailed(
+            "No encuentro el final del ZIP. El IPA puede estar incompleto o dañado. " +
+            "Si está en iCloud, descarga el archivo completo antes de abrirlo."
+        )
+    }
+
+    /// Fase rápida: solo lee el catálogo del ZIP. No infla assets, iconos ni
+    /// ejecutables, aunque el IPA mida varios gigabytes.
+    static func readIndex(_ url: URL) throws -> Snapshot {
+        try verifyZipTail(url)
+        let zip = try ZIPFoundation.Archive(url: url, accessMode: .read)
+        var entries: [Entry] = []
+        entries.reserveCapacity(256)
+        var visited = 0
+        for entry in zip {
+            try Task.checkCancellation()
+            visited += 1
+            guard visited <= maxEntries else {
+                throw ExplorerOperationError.tooManyArchiveEntries
+            }
+            guard entry.type != .symlink,
+                  (try? validatedComponents(entry.path)) != nil else { continue }
+            entries.append(Entry(
+                path: entry.path,
+                size: entry.uncompressedSize,
+                directory: entry.type == .directory
+            ))
+        }
+        return Snapshot(entries: entries, details: Details())
+    }
+
     static func read(_ url: URL) throws -> Snapshot {
+        try verifyZipTail(url)
         let zip = try ZIPFoundation.Archive(url: url, accessMode: .read)
         var entries: [Entry] = []
         var infoPlist: ZIPFoundation.Entry?
@@ -165,8 +228,11 @@ enum ExplorerPackageArchive {
             return score(a) > score(b)
         }
 
-        // Evitar recorrer un catálogo entero de imágenes buscando un icono.
-        for entry in ranked.prefix(16) {
+        // En paquetes enormes, no probamos 16 imágenes potencialmente
+        // grandes mientras el usuario ya navega las carpetas.
+        let isLarge = ((try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+            > 512 * 1024 * 1024
+        for entry in ranked.prefix(isLarge ? 3 : 16) {
             if let data = try? readSmall(entry, from: zip),
                let icon = UIImage(data: data), icon.size.width >= 32,
                icon.size.height >= 32 {
@@ -201,6 +267,7 @@ enum ExplorerPackageArchive {
         try ExplorerFileEngine.ensureInsideRoot(packageURL, root: sourceRoot)
         try ExplorerFileEngine.ensureInsideRoot(directory, root: destinationRoot)
         let parts = try validatedComponents(path)
+        try verifyZipTail(packageURL)
         let zip = try ZIPFoundation.Archive(url: packageURL, accessMode: .read)
         guard let entry = zip[path], entry.type == .file,
               entry.uncompressedSize <= maxExportFile else {
@@ -253,6 +320,8 @@ struct ExplorerPackageBrowserView: View {
     @State private var search = ""
     @State private var selected: ExplorerPackageArchive.Entry?
     @State private var loading = true
+    @State private var loadingDetails = false
+    @State private var details: ExplorerPackageArchive.Details?
     @State private var exporting = false
     @State private var message: String?
     @State private var failed = false
@@ -286,7 +355,7 @@ struct ExplorerPackageBrowserView: View {
     var body: some View {
         NavigationStack {
             List {
-                if let details = snapshot?.details {
+                if let details {
                     Section {
                         HStack(spacing: 12) {
                             if let icon = details.icon {
@@ -320,6 +389,10 @@ struct ExplorerPackageBrowserView: View {
                         Label("Volver a carpeta anterior", systemImage: "arrow.up.left")
                     }
                 }
+                if loadingDetails {
+                    Section { Label("Leyendo nombre e icono en segundo plano…", systemImage: "photo")
+                        .foregroundStyle(.secondary).font(.footnote) }
+                }
                 if let message {
                     Section {
                         Text(message).foregroundStyle(failed ? Color.red : Color.secondary)
@@ -328,7 +401,7 @@ struct ExplorerPackageBrowserView: View {
                 }
                 Section(path.isEmpty ? "Contenido" : path) {
                     if loading {
-                        ProgressView("Leyendo paquete…")
+                        ProgressView("Leyendo índice del paquete…")
                     } else if visible.isEmpty {
                         Text("No hay archivos en esta ubicación.").foregroundStyle(.secondary)
                     }
@@ -347,7 +420,7 @@ struct ExplorerPackageBrowserView: View {
                                     Text(entry.name).lineLimit(2)
                                     if !entry.directory {
                                         Text(ByteCountFormatter.string(
-                                            fromByteCount: Int64(entry.size),
+                                            fromByteCount: Int64(clamping: entry.size),
                                             countStyle: .file
                                         )).font(.caption2).foregroundStyle(.secondary)
                                     }
@@ -374,17 +447,32 @@ struct ExplorerPackageBrowserView: View {
             .task(id: target.id) {
                 loading = true
                 let package = target.url
+                snapshot = nil
+                details = nil
+                failed = false
+                message = nil
                 let result = await Task.detached(priority: .userInitiated) {
-                    Result { try ExplorerPackageArchive.read(package) }
+                    Result { try ExplorerPackageArchive.readIndex(package) }
                 }.value
                 guard !Task.isCancelled else { return }
                 switch result {
-                case .success(let value): snapshot = value
+                case .success(let value):
+                    snapshot = value
+                    loading = false
+                    loadingDetails = true
+                    // Segunda fase: la carpeta ya está disponible aunque la
+                    // lectura del icono o Info.plist tarde en este iPhone.
+                    let info = await Task.detached(priority: .utility) {
+                        try? ExplorerPackageArchive.read(package).details
+                    }.value
+                    guard !Task.isCancelled else { return }
+                    details = info
+                    loadingDetails = false
                 case .failure(let error):
                     failed = true
                     message = error.localizedDescription
+                    loading = false
                 }
-                loading = false
             }
             .confirmationDialog(
                 selected?.name ?? "Extraer archivo",
