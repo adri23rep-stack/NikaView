@@ -807,7 +807,7 @@ struct PrivateVaultView: View {
             }
         }
         .overlay {
-            PrivateVaultDragPreview(drag: vaultDrag)
+            PrivateVaultDragPreview(drag: vaultDrag, pointer: vaultDrag.pointer)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             browserActions
