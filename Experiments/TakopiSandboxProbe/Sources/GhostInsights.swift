@@ -56,8 +56,8 @@ struct GhostInsights {
     }
 
     func filtered(_ paths: Set<String>, area: String) -> [String] {
-        let items = area == "Todas" ? paths : paths.filter { Self.area(for: $0) == area }
-        return items.sorted()
+        if area == "Todas" { return paths.sorted() }
+        return paths.filter { Self.area(for: $0) == area }.sorted()
     }
 
     var summary: String {
