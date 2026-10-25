@@ -37,6 +37,11 @@ jobs:
           cp Tests/ComparisonTests.swift Tests/main.swift
           swiftc Sources/GhostInsights.swift Sources/GhostSnapshotDiff.swift Tests/main.swift -o Tests/comparison-tests
           Tests/comparison-tests
+      - name: Validate private snapshot history
+        run: |
+          cp Tests/HistoryTests.swift Tests/main.swift
+          swiftc Sources/GhostSnapshotHistory.swift Tests/main.swift -o Tests/history-tests
+          Tests/history-tests
       - name: Compile iOS
         run: |
           xcodebuild -project TakopiSandboxProbe.xcodeproj \
