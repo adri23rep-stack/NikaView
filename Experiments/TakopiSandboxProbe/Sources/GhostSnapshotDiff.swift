@@ -23,8 +23,10 @@ struct GhostSnapshotDiff {
         let old = Set(previous.filter { $0.hasPrefix("/") })
         let now = Set(current.filter { $0.hasPrefix("/") })
 
-        appeared = now.subtracting(old).sorted()
-        noLongerObserved = old.subtracting(now).sorted()
+        let newPaths = now.subtracting(old).sorted()
+        let missingPaths = old.subtracting(now).sorted()
+        appeared = newPaths
+        noLongerObserved = missingPaths
         shared = old.intersection(now).count
         previousTotal = old.count
         currentTotal = now.count
@@ -35,8 +37,8 @@ struct GhostSnapshotDiff {
                 area: area,
                 current: now.filter { GhostInsights.area(for: $0) == area }.count,
                 previous: old.filter { GhostInsights.area(for: $0) == area }.count,
-                appeared: appeared.filter { GhostInsights.area(for: $0) == area }.count,
-                notObserved: noLongerObserved.filter { GhostInsights.area(for: $0) == area }.count
+                appeared: newPaths.filter { GhostInsights.area(for: $0) == area }.count,
+                notObserved: missingPaths.filter { GhostInsights.area(for: $0) == area }.count
             )
         }.sorted { $0.current > $1.current }
     }
