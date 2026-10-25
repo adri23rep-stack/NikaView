@@ -1,0 +1,61 @@
+name: Takopi iOS 27 Sandbox Probe
+
+on:
+  push:
+    branches:
+      - experiment/ios27-sandbox-probe
+  pull_request:
+    paths:
+      - 'Experiments/TakopiSandboxProbe/**'
+      - '.github/workflows/takopi-ios27-sandbox-probe.yml'
+  workflow_dispatch:
+
+jobs:
+  ios-build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: Experiments/TakopiSandboxProbe
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Validate path index on macOS
+        run: |
+          cp Tests/ParserTests.swift Tests/main.swift
+          swiftc Sources/GhostPathParser.swift Tests/main.swift -o Tests/path-tests
+          Tests/path-tests
+      - name: Validate anonymous insights
+        run: |
+          cp Tests/InsightsTests.swift Tests/main.swift
+          swiftc Sources/GhostInsights.swift Tests/main.swift -o Tests/insight-tests
+          Tests/insight-tests
+      - name: Validate capture comparison
+        run: |
+          cp Tests/ComparisonTests.swift Tests/main.swift
+          swiftc Sources/GhostInsights.swift Sources/GhostSnapshotDiff.swift Tests/main.swift -o Tests/comparison-tests
+          Tests/comparison-tests
+      - name: Validate private snapshot history
+        run: |
+          cp Tests/HistoryTests.swift Tests/main.swift
+          swiftc Sources/GhostSnapshotHistory.swift Tests/main.swift -o Tests/history-tests
+          Tests/history-tests
+      - name: Compile iOS
+        run: |
+          xcodebuild -project TakopiSandboxProbe.xcodeproj \
+            -scheme TakopiSandboxProbe -configuration Release \
+            -sdk iphoneos -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: Prepare unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/TakopiSandboxProbe.app Payload/
+          zip -qr TakopiSandboxProbe-unsigned.ipa Payload
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TakopiSandboxProbe-unsigned
+          path: Experiments/TakopiSandboxProbe/TakopiSandboxProbe-unsigned.ipa
+          if-no-files-found: error
