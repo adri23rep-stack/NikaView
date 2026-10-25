@@ -5,7 +5,8 @@ let temp = FileManager.default.temporaryDirectory
 defer { try? FileManager.default.removeItem(at: temp) }
 
 let store = GhostSnapshotHistory(directory: temp)
-precondition(try store.list().isEmpty)
+let initiallySaved = try store.list()
+precondition(initiallySaved.isEmpty)
 
 let first = try store.save(paths: [
     "/private/var/mobile/TestA",
@@ -13,12 +14,14 @@ let first = try store.save(paths: [
     "/private/var/mobile/TestB"
 ], source: "Prueba local")
 precondition(first.numberOfPaths == 2)
-precondition(try store.list().count == 1)
-precondition(try store.list()[0].paths == ["/private/var/mobile/TestA", "/private/var/mobile/TestB"])
-precondition(try store.list()[0].source == "Prueba local")
+let afterFirst = try store.list()
+precondition(afterFirst.count == 1)
+precondition(afterFirst[0].paths == ["/private/var/mobile/TestA", "/private/var/mobile/TestB"])
+precondition(afterFirst[0].source == "Prueba local")
 
 try store.delete(id: first.id)
-precondition(try store.list().isEmpty)
+let afterDelete = try store.list()
+precondition(afterDelete.isEmpty)
 
 do {
     _ = try store.save(paths: [])
@@ -30,7 +33,8 @@ do {
 for i in 0..<GhostSnapshotHistory.maximumSnapshots {
     _ = try store.save(paths: ["/test/sample-\(i)"])
 }
-precondition(try store.list().count == GhostSnapshotHistory.maximumSnapshots)
+let atCapacity = try store.list()
+precondition(atCapacity.count == GhostSnapshotHistory.maximumSnapshots)
 
 do {
     _ = try store.save(paths: ["/test/overflow"])
@@ -39,15 +43,18 @@ do {
     // Expected.
 }
 
-let oldest = try store.list().last!
+let oldest = atCapacity.last!
 try store.delete(id: oldest.id)
-precondition(try store.list().count == GhostSnapshotHistory.maximumSnapshots - 1)
+let afterPrune = try store.list()
+precondition(afterPrune.count == GhostSnapshotHistory.maximumSnapshots - 1)
 
 let newRecord = try store.save(paths: ["/test/replacement"])
-precondition(try store.list().contains { $0.id == newRecord.id })
+let afterReplacement = try store.list()
+precondition(afterReplacement.contains { $0.id == newRecord.id })
 
 // Guard against accidentally following user-controlled filenames.
 try store.delete(id: UUID())
-precondition(try store.list().count == GhostSnapshotHistory.maximumSnapshots)
+let finalRecords = try store.list()
+precondition(finalRecords.count == GhostSnapshotHistory.maximumSnapshots)
 
 print("12 protected local snapshot history checks passed")
