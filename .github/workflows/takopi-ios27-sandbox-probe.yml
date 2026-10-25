@@ -27,6 +27,11 @@ jobs:
           cp Tests/ParserTests.swift Tests/main.swift
           swiftc Sources/GhostPathParser.swift Tests/main.swift -o Tests/path-tests
           Tests/path-tests
+      - name: Validate anonymous insights
+        run: |
+          cp Tests/InsightsTests.swift Tests/main.swift
+          swiftc Sources/GhostInsights.swift Tests/main.swift -o Tests/insight-tests
+          Tests/insight-tests
       - name: Compile iOS
         run: |
           xcodebuild -project TakopiSandboxProbe.xcodeproj \
