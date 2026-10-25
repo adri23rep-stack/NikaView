@@ -46,6 +46,14 @@ struct GhostExplorerView: View {
                 .buttonStyle(.bordered)
 
                 if scanned {
+                    NavigationLink {
+                        GhostInsightsView(index: index)
+                    } label: {
+                        Label("Resumen y categorías", systemImage: "chart.bar.xaxis")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
                     Text("\(index.seen.count.formatted()) rutas únicas · \(stats)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -69,7 +77,7 @@ struct GhostExplorerView: View {
                 )
             }
         }
-        .navigationTitle("Takopi Ghost 0.5")
+        .navigationTitle("Takopi Ghost 0.6")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selected) { item in
             GhostDetailsView(entry: item)
