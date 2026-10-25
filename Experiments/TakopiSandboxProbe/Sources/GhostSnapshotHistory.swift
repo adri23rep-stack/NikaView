@@ -69,7 +69,7 @@ struct GhostSnapshotHistory {
         let decoder = JSONDecoder()
         for url in urls where url.pathExtension == "json" {
             guard let uuid = UUID(uuidString: url.deletingPathExtension().lastPathComponent),
-                  url == snapshotFile(uuid) else { continue }
+                  url.lastPathComponent == uuid.uuidString + ".json" else { continue }
             let data = try Data(contentsOf: url)
             let record = try decoder.decode(GhostSavedSnapshot.self, from: data)
             guard record.id == uuid else { continue }
