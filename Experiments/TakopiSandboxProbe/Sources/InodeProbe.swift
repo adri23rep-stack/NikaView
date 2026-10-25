@@ -2,8 +2,7 @@ import Foundation
 import Darwin
 import UIKit
 
-// API de macOS/iOS que intenta convertir un identificador de archivo a una ruta.
-// No abre el archivo ni solicita privilegios adicionales.
+// Convierte un identificador de archivo a una ruta, sin abrir su contenido.
 @_silgen_name("fsgetpath")
 private func probe_fsgetpath(
     _ buffer: UnsafeMutablePointer<CChar>,
@@ -14,16 +13,38 @@ private func probe_fsgetpath(
 
 enum InodeProbe {
     private static let maxSeconds = 4.0
-    private static let maxExamples = 12
+    private static let maxExamplesPerGroup = 5
+
+    private static func group(for path: String) -> String {
+        if path.hasPrefix("/private/var/mobile/Library/") ||
+           path.hasPrefix("/var/mobile/Library/") {
+            return "Biblioteca móvil"
+        }
+        if path.contains("/Containers/Data/Application/") {
+            return "Contenedores de apps"
+        }
+        if path.hasPrefix("/private/var/containers/") ||
+           path.hasPrefix("/var/containers/") {
+            return "Contenedores del sistema"
+        }
+        if path.hasPrefix("/System/") ||
+           path.hasPrefix("/usr/") {
+            return "Sistema"
+        }
+        return "Otras rutas"
+    }
 
     static func run() -> String {
         let home = NSHomeDirectory()
+        let isVirtual = home.contains("/Documents/Data/Application/")
         var volume = statfs()
         var homeMetadata = stat()
+
         var report: [String] = [
-            "TAKOPI FSGETPATH PROBE",
+            "TAKOPI FSGETPATH PROBE 0.3",
             "iOS: \(UIDevice.current.systemVersion)",
-            "Modo: solo nombres; sin acceso al contenido",
+            "Modo: solo nombres, sin lectura del contenido",
+            "Entorno: \(isVirtual ? "posible LiveContainer" : "contenedor directo")",
             ""
         ]
 
@@ -36,44 +57,47 @@ enum InodeProbe {
 
         var fsid = volume.f_fsid
         let ownID = UInt64(homeMetadata.st_ino)
-        report.append("Control: inode del contenedor propio = \(ownID)")
 
         func resolve(_ identifier: UInt64) -> (String?, Int32) {
-            var path = [CChar](repeating: 0, count: 2048)
-            let length = withUnsafePointer(to: &fsid) { fsidPointer in
-                path.withUnsafeMutableBufferPointer { bytes in
-                    probe_fsgetpath(bytes.baseAddress!, bytes.count, fsidPointer, identifier)
+            var buffer = [CChar](repeating: 0, count: 2048)
+            errno = 0
+            let length = withUnsafePointer(to: &fsid) { pointer in
+                buffer.withUnsafeMutableBufferPointer { bytes in
+                    probe_fsgetpath(bytes.baseAddress!, bytes.count, pointer, identifier)
                 }
             }
             let errorCode = errno
-            if length > 0 { return (String(cString: path), 0) }
+            if length > 0 { return (String(cString: buffer), 0) }
             return (nil, errorCode)
         }
 
         let (ownPath, ownError) = resolve(ownID)
-        if let ownPath {
-            report.append("✅ Control positivo: \(ownPath)")
-        } else {
-            report.append("🔒 Control fallido: errno \(ownError)")
-            report.append("No se continúa porque la propia API no resuelve nuestro contenedor.")
+        guard let ownPath else {
+            report.append("🔒 Control propio no resuelto: errno \(ownError)")
+            report.append("No se realiza el barrido.")
             return report.joined(separator: "\n")
         }
+        report.append("✅ Control positivo: ruta del contenedor propio recuperada")
+        report.append("Inode propio: \(ownID)")
 
         let start = ProcessInfo.processInfo.systemUptime
         var visited = Set<UInt64>()
-        var found: [String] = []
+        var uniquePaths = Set<String>()
         var checked = 0
         var resolvedCount = 0
+        var categories: [String: [String]] = [:]
 
         func inspect(_ identifier: UInt64) {
             guard visited.insert(identifier).inserted else { return }
-            let (resolved, _) = resolve(identifier)
             checked += 1
-            guard let resolved else { return }
+            let (path, _) = resolve(identifier)
+            guard let path else { return }
             resolvedCount += 1
-            if found.count < maxExamples,
-               resolved.hasPrefix("/private/var/") || resolved.hasPrefix("/var/") {
-                found.append(resolved)
+            guard uniquePaths.insert(path).inserted else { return }
+
+            let category = group(for: path)
+            if (categories[category]?.count ?? 0) < maxExamplesPerGroup {
+                categories[category, default: []].append(path)
             }
         }
 
@@ -93,19 +117,51 @@ enum InodeProbe {
             }
         }
 
+        let duplicateCount = resolvedCount - uniquePaths.count
         report += [
             "",
             "Identificadores examinados: \(checked)",
-            "Rutas resueltas: \(resolvedCount)",
-            "Ejemplos (hasta \(maxExamples)):",
+            "Resoluciones exitosas: \(resolvedCount)",
+            "Rutas ÚNICAS: \(uniquePaths.count)",
+            "Rutas repetidas: \(duplicateCount)",
+            "",
+            "EJEMPLOS POR CATEGORÍA"
         ]
-        if found.isEmpty { report.append("(ninguna ruta adicional detectada)") }
-        report.append(contentsOf: found)
+
+        for category in [
+            "Biblioteca móvil",
+            "Contenedores de apps",
+            "Contenedores del sistema",
+            "Sistema",
+            "Otras rutas"
+        ] {
+            guard let examples = categories[category], !examples.isEmpty else { continue }
+            report.append("\n\(category):")
+            report.append(contentsOf: examples.map { " • \($0)" })
+        }
+
+        // Comparación explícita: detectar un nombre no concede permiso para listar.
+        report += ["", "PRUEBA DE PERMISOS (no lee archivos)"]
+        for path in [
+            ownPath,
+            "/private/var/mobile/Library/Safari",
+            "/private/var/mobile/Library/AddressBook",
+            "/private/var/mobile/Containers/Data/Application"
+        ] {
+            do {
+                let entries = try FileManager.default.contentsOfDirectory(atPath: path)
+                report.append("\(path): LISTABLE (\(entries.count) elementos, nombres no incluidos)")
+            } catch {
+                let problem = error as NSError
+                report.append("\(path): BLOQUEADO (\(problem.domain) \(problem.code))")
+            }
+        }
+
         report += [
             "",
-            "AVISO: recuperar un nombre no significa poder leer su contenido.",
-            "La enumeración está limitada a 4 segundos.",
-            "No se leen, modifican ni envían archivos."
+            "Ver nombres no significa poder leer archivos.",
+            "Máximo 4 segundos. No se modifican ni transmiten datos.",
+            "Un barrido dentro de LiveContainer NO prueba el comportamiento de una app instalada directamente."
         ]
         return report.joined(separator: "\n")
     }
