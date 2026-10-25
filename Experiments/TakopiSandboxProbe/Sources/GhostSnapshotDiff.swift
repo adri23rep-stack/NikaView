@@ -45,7 +45,7 @@ struct GhostSnapshotDiff {
 
     var safeSummary: String {
         let lines = [
-            "TAKOPI GHOST 0.7 - COMPARACION ANONIMA",
+            "TAKOPI GHOST 0.8 - COMPARACION ANONIMA",
             "Solo compara nombres. No indica archivos realmente creados o eliminados.",
             "Rutas captura anterior: \(previousTotal)",
             "Rutas captura actual: \(currentTotal)",
