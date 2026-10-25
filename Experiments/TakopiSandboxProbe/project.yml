@@ -6,12 +6,13 @@ targets:
   TakopiSandboxProbe:
     type: application
     platform: iOS
-    sources: [Sources]
+    sources:
+      - path: Sources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.takopi.sandboxprobe
         SWIFT_VERSION: '5.0'
+        TARGETED_DEVICE_FAMILY: '1,2'
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        SWIFT_OBJC_BRIDGING_HEADER: Sources/Probe-Bridging-Header.h
