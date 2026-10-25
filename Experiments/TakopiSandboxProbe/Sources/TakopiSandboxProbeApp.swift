@@ -4,7 +4,9 @@ import SwiftUI
 struct TakopiSandboxProbeApp: App {
     var body: some Scene {
         WindowGroup {
-            ProbeView()
+            NavigationStack {
+                GhostExplorerView()
+            }
         }
     }
 }
