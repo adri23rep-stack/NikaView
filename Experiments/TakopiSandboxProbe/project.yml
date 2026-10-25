@@ -12,8 +12,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.takopi.sandboxprobe
         SWIFT_VERSION: '5.0'
-        MARKETING_VERSION: '0.7.0'
-        CURRENT_PROJECT_VERSION: 700
+        MARKETING_VERSION: '0.8.0'
+        CURRENT_PROJECT_VERSION: 800
         INFOPLIST_KEY_CFBundleDisplayName: 'Takopi Ghost'
         TARGETED_DEVICE_FAMILY: '1,2'
         GENERATE_INFOPLIST_FILE: YES
