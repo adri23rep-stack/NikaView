@@ -16,7 +16,7 @@ enum ProbeEngine {
             "/private/var/mobile/Containers/Data/Application",
             "/var/containers/Shared/SystemGroup",
             home,
-            fm.documentsDirectoryURL.path,
+            fm.urls(for: .documentDirectory, in: .userDomainMask).first?.path ?? home + "/Documents",
             fm.urls(for: .libraryDirectory, in: .userDomainMask).first?.path ?? home + "/Library"
         ]
 
