@@ -85,7 +85,7 @@ struct GhostExplorerView: View {
                 )
             }
         }
-        .navigationTitle("Takopi Ghost 0.7")
+        .navigationTitle("Takopi Ghost 0.8")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selected) { item in
             GhostDetailsView(entry: item)
@@ -114,7 +114,7 @@ struct GhostExplorerView: View {
         scanned = true
         busy = false
         error = newIndex.seen.isEmpty ? "No se detectaron rutas válidas." : nil
-        exportText = (["TAKOPI GHOST 0.7",
+        exportText = (["TAKOPI GHOST 0.8",
                        "Solo nombres; no se pueden leer archivos protegidos.",
                        ""] + newIndex.seen.sorted()).joined(separator: "\n")
     }
