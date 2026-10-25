@@ -32,6 +32,15 @@ struct ProbeView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(isRunning)
 
+                    Button {
+                        runInodeProbe()
+                    } label: {
+                        Label("Probar rutas por identificador", systemImage: "point.3.connected.trianglepath.dotted")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isRunning)
+
                     ShareLink(item: report) {
                         Label("Compartir resultado", systemImage: "square.and.arrow.up")
                     }
@@ -45,6 +54,18 @@ struct ProbeView: View {
                 .padding()
             }
             .navigationTitle("Takopi Probe")
+        }
+    }
+
+    private func runInodeProbe() {
+        isRunning = true
+        report = "Consultando solo nombres de rutas…"
+        DispatchQueue.global(qos: .utility).async {
+            let result = InodeProbe.run()
+            DispatchQueue.main.async {
+                report = result
+                isRunning = false
+            }
         }
     }
 
