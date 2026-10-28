@@ -49,6 +49,14 @@ struct PrivateVaultView: View {
     @State private var showBatchMovePicker = false
     @State private var showBatchDeleteConfirmation = false
     @State private var showImporter = false
+    @State private var showBackupImportPicker = false
+    @State private var showBackupExportPicker = false
+    @State private var backupExportURL: URL?
+    @State private var pendingBackupImportURL: URL?
+    @State private var showBackupRestorePrompt = false
+    @State private var backupRestorePassword = ""
+    @State private var backupBusy = false
+    @State private var backupNotice: String?
     @State private var showPhotoPicker = false
     @State private var offerDeletePhotos = false
     @StateObject private var photoImport = NikaidoPhotoImportCoordinator()
@@ -114,6 +122,55 @@ struct PrivateVaultView: View {
                     )
                 }
             }
+        }
+        .sheet(isPresented: $showBackupImportPicker, onDismiss: {
+            if pendingBackupImportURL != nil { showBackupRestorePrompt = true }
+        }) {
+            TakopiVaultBackupImportPicker(
+                onPick: { url in
+                    pendingBackupImportURL = url
+                    showBackupImportPicker = false
+                },
+                onCancel: { showBackupImportPicker = false }
+            )
+        }
+        .sheet(isPresented: $showBackupExportPicker, onDismiss: {
+            TakopiVaultBackup.removeTemporaryBackup(backupExportURL)
+            backupExportURL = nil
+        }) {
+            if let backupExportURL {
+                TakopiVaultBackupExportPicker(archiveURL: backupExportURL) {
+                    showBackupExportPicker = false
+                }
+            }
+        }
+        .alert(
+            "Importar respaldo cifrado",
+            isPresented: $showBackupRestorePrompt
+        ) {
+            SecureField("Contraseña del respaldo", text: $backupRestorePassword)
+                .textContentType(.password)
+            Button(
+                vault.hasVault ? "Reemplazar bóveda actual" : "Restaurar bóveda",
+                role: vault.hasVault ? .destructive : nil
+            ) {
+                restoreVaultBackup()
+            }
+            Button("Cancelar", role: .cancel) {
+                releaseImportedBackup()
+            }
+        } message: {
+            Text(vault.hasVault
+                ? "La copia sustituirá TODA la bóveda actual. Valida primero su contraseña e integridad; después se guardará la bóveda nueva. No borres tu respaldo original."
+                : "Se verificará la contraseña e integridad antes de restaurar la bóveda y sus archivos cifrados.")
+        }
+        .alert("Respaldo de Takopi Vault", isPresented: Binding(
+            get: { backupNotice != nil },
+            set: { if !$0 { backupNotice = nil } }
+        )) {
+            Button("Entendido", role: .cancel) { backupNotice = nil }
+        } message: {
+            Text(backupNotice ?? "")
         }
         .sheet(isPresented: $showPhotoPicker) {
             NikaidoPhotoPicker { picked, warning in
@@ -243,6 +300,7 @@ struct PrivateVaultView: View {
             selectedSecFolder = nil
             password = ""
             confirmPassword = ""
+            backupRestorePassword = ""
             newFolderName = ""
             showImporter = false
             showNewFolder = false
@@ -592,6 +650,16 @@ struct PrivateVaultView: View {
                 if vault.hasVault {
                     unlockOptions
                 }
+
+                Button {
+                    showBackupImportPicker = true
+                } label: {
+                    Label("Restaurar copia cifrada desde Archivos",
+                          systemImage: "externaldrive.badge.plus")
+                        .font(.subheadline.weight(.medium))
+                }
+                .buttonStyle(.bordered)
+                .disabled(backupBusy)
 
                 if passwordPanelVisible {
                     passwordPanel
@@ -966,6 +1034,50 @@ struct PrivateVaultView: View {
     }
 
     // Floating Liquid Glass actions stay reachable at the bottom of the vault.
+    /// The backup contains only ciphertext; the user chooses local or iCloud.
+    private func exportVaultBackup() {
+        guard !backupBusy else { return }
+        backupBusy = true
+        Task {
+            defer { backupBusy = false }
+            do {
+                backupExportURL = try await vault.exportEncryptedBackup()
+                showBackupExportPicker = true
+            } catch {
+                backupNotice = error.localizedDescription
+            }
+        }
+    }
+
+    private func releaseImportedBackup() {
+        if let url = pendingBackupImportURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        pendingBackupImportURL = nil
+        backupRestorePassword = ""
+    }
+
+    private func restoreVaultBackup() {
+        guard let url = pendingBackupImportURL, !backupBusy else { return }
+        let secret = backupRestorePassword
+        backupRestorePassword = ""
+        backupBusy = true
+        Task {
+            defer {
+                backupBusy = false
+                releaseImportedBackup()
+            }
+            do {
+                try await vault.importEncryptedBackup(from: url, password: secret)
+                unlockMethod = .password
+                currentFolderID = nil
+                backupNotice = "Se restauró la bóveda cifrada. Desbloquéala con la contraseña del respaldo. Face ID debe configurarse otra vez en este dispositivo."
+            } catch {
+                backupNotice = "No se importó la copia: " + error.localizedDescription
+            }
+        }
+    }
+
     private var browserActions: some View {
         HStack(spacing: 2) {
             Button {
@@ -1026,6 +1138,21 @@ struct PrivateVaultView: View {
             .accessibilityHint("Elige entre archivos, fotos y videos del carrete")
 
             Menu {
+                Section("Respaldo cifrado") {
+                    Button {
+                        exportVaultBackup()
+                    } label: {
+                        Label("Exportar copia completa cifrada", systemImage: "externaldrive.badge.plus")
+                    }
+                    .disabled(backupBusy || vault.isBusy)
+                    Button {
+                        showBackupImportPicker = true
+                    } label: {
+                        Label("Importar copia completa cifrada", systemImage: "square.and.arrow.down")
+                    }
+                    .disabled(backupBusy || vault.isBusy)
+                }
+
                 Button {
                     vault.refreshOperationalStatus()
                     showDiagnostics = true

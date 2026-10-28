@@ -149,6 +149,141 @@ final class PrivateVaultSession: ObservableObject {
         hasVault = Self.hasExistingVaultArtifacts()
     }
 
+    /// La copia contiene solamente ciphertext y metadata de desbloqueo.
+    /// El ZIP se construye en disco por fragmentos: nunca carga blobs enormes.
+    func exportEncryptedBackup() async throws -> URL {
+        guard isUnlocked else { throw PrivateVaultError.locked }
+        guard !isBusy, !LANTransferActivity.shared.isActive else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+        isBusy = true
+        defer { isBusy = false }
+        let expectedGeneration = generation
+        let result = try await Task.detached(priority: .utility) {
+            try TakopiVaultBackup.create(from: Self.vaultRootURL)
+        }.value
+        guard isUnlocked, expectedGeneration == generation else {
+            TakopiVaultBackup.removeTemporaryBackup(result)
+            throw PrivateVaultError.locked
+        }
+        return result
+    }
+
+    /// Valida la contraseña del ARCHIVO antes de reemplazar ningún dato.
+    /// Si existe bóveda actual, mueve la carpeta a un rollback temporal y
+    /// recupera esa carpeta si falla la publicación del respaldo.
+    func importEncryptedBackup(from archiveURL: URL, password: String) async throws {
+        guard !password.isEmpty else { throw PrivateVaultError.wrongPassword }
+        guard !isBusy, !LANTransferActivity.shared.isActive else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+
+        isBusy = true
+        let previousGeneration = generation
+        let staged: URL
+        do {
+            staged = try await Task.detached(priority: .userInitiated) {
+                let scope = archiveURL.startAccessingSecurityScopedResource()
+                defer { if scope { archiveURL.stopAccessingSecurityScopedResource() } }
+                let stage = try TakopiVaultBackup.stage(archiveURL, nextTo: Self.vaultRootURL)
+                do {
+                    try Self.authenticateEncryptedBackup(at: stage, password: password)
+                } catch {
+                    try? FileManager.default.removeItem(at: stage)
+                    throw error
+                }
+                return stage
+            }.value
+        } catch {
+            isBusy = false
+            throw error
+        }
+
+        guard generation == previousGeneration else {
+            try? FileManager.default.removeItem(at: staged)
+            isBusy = false
+            throw PrivateVaultError.locked
+        }
+
+        // Stop all open files, thumbnails, LAN and key material before swapping.
+        lock()
+        isBusy = true
+        let fm = FileManager.default
+        let root = Self.vaultRootURL
+        let rollback = root.deletingLastPathComponent().appendingPathComponent(
+            ".TakopiVault-rollback-" + UUID().uuidString, isDirectory: true
+        )
+        let hadRoot = fm.fileExists(atPath: root.path)
+        var movedExisting = false
+        do {
+            if hadRoot {
+                try fm.moveItem(at: root, to: rollback)
+                movedExisting = true
+            }
+            try fm.moveItem(at: staged, to: root)
+            try Self.applyProtection(to: root)
+            hasVault = true
+            entries = []
+            isUnlocked = false
+            errorMessage = nil
+            isBusy = false
+            // The old Face ID credentials belong to the old encryption salt.
+            // A restored vault must initially be unlocked with its own password.
+            NikaidoUnlockPreference.disableBiometric()
+            NikaidoUnlockPreference.method = .password
+            NikaidoSecFaceID.clearAll()
+            if movedExisting { try? fm.removeItem(at: rollback) }
+        } catch {
+            // Roll back even if the final folder was partially published.
+            if movedExisting {
+                if fm.fileExists(atPath: root.path) {
+                    try? fm.removeItem(at: root)
+                }
+                try? fm.moveItem(at: rollback, to: root)
+            }
+            if fm.fileExists(atPath: staged.path) {
+                try? fm.removeItem(at: staged)
+            }
+            hasVault = Self.hasExistingVaultArtifacts()
+            isBusy = false
+            throw error
+        }
+    }
+
+    /// Authenticate the imported config/index with the imported password.
+    /// This reuses the same verifier and index graph checks as normal unlock.
+    nonisolated private static func authenticateEncryptedBackup(
+        at stage: URL, password: String
+    ) throws {
+        let configData = try Data(contentsOf: stage.appendingPathComponent("vault.json"))
+        guard configData.count <= 1 * 1024 * 1024 else {
+            throw PrivateVaultError.metadataCorrupt
+        }
+        let config = try JSONDecoder().decode(PrivateVaultConfig.self, from: configData)
+        try NikaidoVaultMigration.validate(configVersion: config.version)
+        let candidateKey = try PrivateVaultCrypto.deriveKey(
+            password: password, salt: config.salt
+        )
+        let verifier = try PrivateVaultCrypto.openSmall(config.verifier, key: candidateKey)
+        guard verifier == Data("SolidSecPrivateVault-v1".utf8) else {
+            throw PrivateVaultError.wrongPassword
+        }
+        let indexURL = stage.appendingPathComponent("index.ssv")
+        let indexData = try Data(contentsOf: indexURL, options: [.mappedIfSafe])
+        guard indexData.count <= 128 * 1024 * 1024 else {
+            throw PrivateVaultError.indexTooLarge
+        }
+        let plaintext = try PrivateVaultCrypto.openSmall(indexData, key: candidateKey)
+        let restored = try JSONDecoder().decode([PrivateVaultEntry].self, from: plaintext)
+        try validateLoadedIndex(restored)
+        for entry in restored where entry.kind == .file {
+            guard let blob = entry.blobName,
+                  FileManager.default.fileExists(
+                    atPath: stage.appendingPathComponent("blobs/" + blob).path
+                  ) else { throw TakopiVaultBackup.BackupError.missingEncryptedFile }
+        }
+    }
+
     func create(password: String) async {
         guard !password.isEmpty else {
             errorMessage = "Escribe una contraseña."

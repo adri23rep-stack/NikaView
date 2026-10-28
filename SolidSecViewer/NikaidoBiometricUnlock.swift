@@ -340,6 +340,17 @@ enum NikaidoSecFaceID {
         NikaidoUnlockPreference.deleteStoredPassword(account: account(for: id))
     }
 
+    /// Backups contain no device Keychain secrets. Clear IDs from the old
+    /// vault when restoring a different set of encrypted collections.
+    static func clearAll() {
+        for text in stored() {
+            if let id = UUID(uuidString: text) {
+                NikaidoUnlockPreference.deleteStoredPassword(account: account(for: id))
+            }
+        }
+        UserDefaults.standard.removeObject(forKey: storeKey)
+    }
+
     private static func stored() -> Set<String> {
         Set(UserDefaults.standard.stringArray(forKey: storeKey) ?? [])
     }

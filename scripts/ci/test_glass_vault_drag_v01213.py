@@ -25,7 +25,7 @@ checks = {
     "muestra nombre de destino": 'privateVault.folderName(vaultSendDestinationID)' in view,
     "cifrado antes del borrado": view.index("try await ExplorerVaultBridge.send(") < view.index("try await ExplorerFileEngine.delete(items, root: root)"),
     "conservar original": "performSendToVault(deleteOriginals: false)" in view,
-    "versión actual": project.count("MARKETING_VERSION = 0.12.17;") == 2 and project.count("CURRENT_PROJECT_VERSION = 54;") == 2,
+    "versión actual": project.count("MARKETING_VERSION = 0.12.18;") == 2 and project.count("CURRENT_PROJECT_VERSION = 55;") == 2,
 }
 for name, ok in checks.items():
     print(("[OK] " if ok else "[FAIL] ") + name)

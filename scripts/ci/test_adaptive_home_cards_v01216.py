@@ -25,7 +25,7 @@ checks={
     "category view keeps tap navigation":"onOpenExplorer(.global(category.filter))" in categories,
     "existing card press animations":"NikaidoPressCardStyle()" in home,
     "theme setting unchanged":"@Environment(\\.nikaidoAccent)" in home and "onOpenExplorer(.settings)" in home,
-    "version correct":proj.count("MARKETING_VERSION = 0.12.17;")==2 and proj.count("CURRENT_PROJECT_VERSION = 54;")==2
+    "version correct":proj.count("MARKETING_VERSION = 0.12.18;")==2 and proj.count("CURRENT_PROJECT_VERSION = 55;")==2
 }
 for name, passed in checks.items():print(("[OK] " if passed else "[FAIL] ")+name)
 assert all(checks.values()),"Home adaptive cards regression"
