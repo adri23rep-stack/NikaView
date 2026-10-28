@@ -227,6 +227,11 @@ final class PrivateVaultSession: ObservableObject {
             isUnlocked = false
             errorMessage = nil
             isBusy = false
+            // The old Face ID credentials belong to the old encryption salt.
+            // A restored vault must initially be unlocked with its own password.
+            NikaidoUnlockPreference.disableBiometric()
+            NikaidoUnlockPreference.method = .password
+            NikaidoSecFaceID.clearAll()
             if movedExisting { try? fm.removeItem(at: rollback) }
         } catch {
             // Roll back even if the final folder was partially published.
