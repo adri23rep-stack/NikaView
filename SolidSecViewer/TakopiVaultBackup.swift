@@ -138,9 +138,7 @@ enum TakopiVaultBackup {
         var committed = false
         defer { if !committed { try? fm.removeItem(at: stage) } }
 
-        guard let zip = ZIPFoundation.Archive(url: archiveURL, accessMode: .read) else {
-            throw BackupError.invalidPackage
-        }
+        let zip = try ZIPFoundation.Archive(url: archiveURL, accessMode: .read)
         var names = Set<String>()
         var expectedTotal: Int64 = 0
         var manifest: ZIPFoundation.Entry?
@@ -191,7 +189,13 @@ enum TakopiVaultBackup {
               parsed.files.count == entries.count else {
             throw BackupError.invalidPackage
         }
-        let indexed = Dictionary(uniqueKeysWithValues: parsed.files.map { ($0.path, $0) })
+        var indexed: [String: FileRecord] = [:]
+        for record in parsed.files {
+            guard allowedPath(record.path), indexed[record.path] == nil else {
+                throw BackupError.invalidPackage
+            }
+            indexed[record.path] = record
+        }
         guard indexed.count == parsed.files.count,
               Set(indexed.keys) == Set(entries.map(\.path)) else {
             throw BackupError.invalidPackage
