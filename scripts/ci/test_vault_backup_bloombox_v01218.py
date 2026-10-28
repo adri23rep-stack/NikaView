@@ -37,7 +37,7 @@ checks={
  "user confirmation":'Reemplazar bóveda actual' in vault and 'showBackupRestorePrompt' in vault,
  "password input":'SecureField("Contraseña del respaldo"' in vault,
  "restore available when locked":'Label("Restaurar copia cifrada desde Archivos"' in vault,
- "version":pbx.count("MARKETING_VERSION = 0.12.18;")==2 and pbx.count("CURRENT_PROJECT_VERSION = 55;")==2,
+ "version":pbx.count("MARKETING_VERSION = 0.12.19;")==2 and pbx.count("CURRENT_PROJECT_VERSION = 56;")==2,
  "new source files registered":all(x in pbx for x in ["A973","A974","B973","B974"]),
 }
 for name,success in checks.items():print(("[OK] " if success else "[FAIL] ")+name)
