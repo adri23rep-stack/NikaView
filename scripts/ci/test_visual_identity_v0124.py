@@ -30,7 +30,7 @@ checks = {
     "screen switching animated": "withAnimation(.easeInOut(duration: 0.24))" in content and ".transition(" in content,
     "vault exit is not animated": "privateVault.lock()\n                        navigate(.home, animated: false)" in content,
     "screens still accessible": "onOpenExplorer: { kind in" in content and "onOpenVault: {" in content,
-    "build version updated": pbx.count("MARKETING_VERSION = 0.12.18;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 55;") == 2,
+    "build version updated": pbx.count("MARKETING_VERSION = 0.12.19;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 56;") == 2,
 }
 
 for label, passed in checks.items():

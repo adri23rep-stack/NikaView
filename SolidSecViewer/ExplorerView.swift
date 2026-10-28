@@ -1247,6 +1247,17 @@ struct ExplorerView: View {
                 shareURLs = [item.url]
                 showShareSheet = true
             },
+            onInstallIPA: { item in
+                guard !item.isDirectory,
+                      ["ipa", "tipa"].contains(item.url.pathExtension.lowercased())
+                else { return }
+                activePane = index
+                // BloomBox Share Extension imports the IPA with a security-
+                // scoped bookmark. Passing a sandbox file:// URL directly to
+                // livecontainer://install would be inaccessible in BloomBox.
+                shareURLs = [item.url]
+                showShareSheet = true
+            },
             onExtract: { item in
                 activePane = index
                 archivePassword = ""
@@ -1942,6 +1953,7 @@ struct ExplorerPaneView: View {
     let onCopyToOther: (ExplorerFileItem) -> Void
     let onMoveToOther: (ExplorerFileItem) -> Void
     let onShare: (ExplorerFileItem) -> Void
+    let onInstallIPA: (ExplorerFileItem) -> Void
     let onExtract: (ExplorerFileItem) -> Void
     let onCompress: (ExplorerFileItem) -> Void
     let onFavorite: (ExplorerFileItem) -> Void
@@ -2386,6 +2398,16 @@ struct ExplorerPaneView: View {
                 Label(item.isAppPackage || item.pathExtension == "zip"
                       ? "Explorar contenido" : "Vista rápida", systemImage: "eye")
             }
+        }
+
+        if !item.isDirectory,
+           ["ipa", "tipa"].contains(item.url.pathExtension.lowercased()) {
+            Button {
+                onInstallIPA(item)
+            } label: {
+                Label("Instalar con BloomBox", systemImage: "square.and.arrow.up.on.square")
+            }
+            .accessibilityHint("Selecciona Instalar en BloomBox en la hoja de compartir")
         }
 
         if !item.isDirectory && !ExplorerTextEditorView.canEdit(item) {
