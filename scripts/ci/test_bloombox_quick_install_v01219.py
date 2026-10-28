@@ -21,7 +21,7 @@ checks={
  "install action also in IPA viewer":'Label("Instalar con BloomBox"' in browser,
  "full encrypted backup kept":"TakopiVaultBackup.create(" in session and "ZIPFoundation.Archive(url: result, accessMode: .create)" in backup,
  "backup to iCloud or local":"TakopiVaultBackupExportPicker" in vault,
- "backup restore with password":"SecureField("Contraseña del respaldo"' in vault and "authenticateEncryptedBackup" in session,
+ "backup restore with password":'SecureField("Contraseña del respaldo"' in vault and "authenticateEncryptedBackup" in session,
  "backup replacement rollback":'try? fm.moveItem(at: rollback, to: root)' in session,
  "version":project.count("MARKETING_VERSION = 0.12.19;")==2 and project.count("CURRENT_PROJECT_VERSION = 56;")==2
 }
