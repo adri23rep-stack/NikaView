@@ -325,6 +325,7 @@ struct ExplorerPackageBrowserView: View {
     @State private var exporting = false
     @State private var message: String?
     @State private var failed = false
+    @State private var showBloomBoxHandoff = false
 
     private var visible: [ExplorerPackageArchive.Entry] {
         guard let snapshot else { return [] }
@@ -355,6 +356,19 @@ struct ExplorerPackageBrowserView: View {
     var body: some View {
         NavigationStack {
             List {
+                if target.url.pathExtension.lowercased() == "ipa" ||
+                    target.url.pathExtension.lowercased() == "tipa" {
+                    Section("Instalación") {
+                        Button {
+                            showBloomBoxHandoff = true
+                        } label: {
+                            Label("Instalar con BloomBox", systemImage: "square.and.arrow.up.on.square")
+                        }
+                        Text("Elige BloomBox en el menú de iOS para entregar el IPA a su instalador. Si no aparece, guarda el IPA en Archivos y selecciónalo desde BloomBox.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 if let details {
                     Section {
                         HStack(spacing: 12) {
@@ -435,6 +449,9 @@ struct ExplorerPackageBrowserView: View {
                         .disabled(exporting)
                     }
                 }
+            }
+            .sheet(isPresented: $showBloomBoxHandoff) {
+                ExplorerShareSheet(urls: [target.url])
             }
             .searchable(text: $search, prompt: "Buscar dentro del paquete")
             .navigationTitle("Explorar paquete")
