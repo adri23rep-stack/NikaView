@@ -147,6 +147,11 @@ final class PrivateVaultSession: ObservableObject {
     init() {
         Self.cleanupStaleTemporaryPlaintext()
         hasVault = Self.hasExistingVaultArtifacts()
+        // A previous iOS termination may have left a huge unfinished ZIP.
+        // Delete stale exports off the main thread so startup remains responsive.
+        Task.detached(priority: .utility) {
+            TakopiVaultBackup.cleanupStaleTemporaryBackups()
+        }
     }
 
     /// La copia contiene solamente ciphertext y metadata de desbloqueo.
