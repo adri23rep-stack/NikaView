@@ -23,7 +23,7 @@ checks={
  "backup to iCloud or local":"TakopiVaultBackupExportPicker" in vault,
  "backup restore with password":'SecureField("Contraseña del respaldo"' in vault and "authenticateEncryptedBackup" in session,
  "backup replacement rollback":'try? fm.moveItem(at: rollback, to: root)' in session,
- "version":project.count("MARKETING_VERSION = 0.12.20;")==2 and project.count("CURRENT_PROJECT_VERSION = 57;")==2
+ "version":project.count("MARKETING_VERSION = 0.12.21;")==2 and project.count("CURRENT_PROJECT_VERSION = 59;")==2
 }
 for title,ok in checks.items(): print(("[OK] " if ok else "[FAIL] ")+title)
 assert all(checks.values()), "BloomBox quick install and Vault backup regression"

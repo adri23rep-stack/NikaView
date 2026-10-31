@@ -19,7 +19,7 @@ checks = {
     "Vault title and selection remain at top": "browserHeader" in browser and "vaultSelectionToolbar" in browser,
     "old top glass absent": "browserActions" not in vault.split("private var browserHeader: some View {", 1)[1].split("private var vaultSelectionToolbar:", 1)[0],
     "all actions kept": all(a in vault for a in ["showNewFolder = true", "showLANReceiver = true", "showPhotoPicker = true", "showImporter = true", "vault.lock()"]),
-    "version updated": pbx.count("MARKETING_VERSION = 0.12.20;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 57;") == 2,
+    "version updated": pbx.count("MARKETING_VERSION = 0.12.21;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 59;") == 2,
 }
 for name, valid in checks.items():
     print(("OK " if valid else "FAIL ") + name)
