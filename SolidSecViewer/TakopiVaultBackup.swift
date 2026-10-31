@@ -320,17 +320,20 @@ enum TakopiVaultBackup {
 
     /// Clear unfinished legacy exports from prior terminated sessions.
     /// Only paths created under Takopi's temporary directory are eligible.
-    static func cleanupStaleTemporaryBackups() {
+    static func cleanupStaleTemporaryBackups(olderThan cutoff: Date) {
         let fm = FileManager.default
         guard let children = try? fm.contentsOfDirectory(
             at: fm.temporaryDirectory,
-            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+            includingPropertiesForKeys: [
+                .isDirectoryKey, .isSymbolicLinkKey, .creationDateKey
+            ],
             options: [.skipsHiddenFiles]
         ) else { return }
         for child in children where child.lastPathComponent.hasPrefix("TakopiVaultBackup-") {
             guard let values = try? child.resourceValues(
-                forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
-            ), values.isDirectory == true, values.isSymbolicLink != true
+                forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .creationDateKey]
+            ), values.isDirectory == true, values.isSymbolicLink != true,
+               let created = values.creationDate, created < cutoff
             else { continue }
             try? fm.removeItem(at: child)
         }
