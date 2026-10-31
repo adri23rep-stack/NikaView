@@ -266,8 +266,18 @@ def virtual_entries(folder: Path, password: str) -> list[str]:
     if not isinstance(entries, list) or len(entries) > MAX_FILES:
         raise TransferError("Índice inválido")
     mapped = {str(item["id"]): item for item in entries}
+    if len(mapped) != len(entries):
+        raise TransferError("Hay IDs duplicados en el índice")
+    physical = {record["path"] for record in json.loads(
+        (folder / "manifest.json").read_text(encoding="utf-8"))["files"]}
     paths = []
     for item in entries:
+        if item.get("kind") == "file":
+            blob_name = item.get("blobName")
+            if (not isinstance(blob_name, str)
+                    or not allowed("blobs/" + blob_name)
+                    or "blobs/" + blob_name not in physical):
+                raise TransferError("Falta el archivo cifrado de: " + str(item.get("name")))
         seen = set()
         parts = [str(item.get("name", ""))]
         parent = item.get("parentID")
