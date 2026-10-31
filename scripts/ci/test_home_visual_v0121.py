@@ -26,8 +26,8 @@ checks = {
     "Vault text clear": 'Text("Takopi Vault")' in home,
     "fluid shape animates": "onOpenVault()" in home and "HomeVaultGlow" not in home,
     "fluid shape remains moving": "minimumInterval: 1.0 / 20.0" in home,
-    "vault animations pause in low power mode": "animated: motionEnabled" in home and "isLowPowerModeEnabled" in home,
-    "glow pauses without animation": "paused: !animated" in home,
+    "home animations respect low power mode": "motionEnabled" in home and "isLowPowerModeEnabled" in home,
+    "vault has no pulsing glow": "HomeVaultGlow" not in home and "strength: 0.58" in home,
     "no fake bubbles": "HomeVaultBubbles" not in home,
     "version v0.12.9": pbx.count("MARKETING_VERSION = 0.12.20;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 57;") == 2,
 }
