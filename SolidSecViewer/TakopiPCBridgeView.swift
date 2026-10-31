@@ -1,5 +1,6 @@
 import SwiftUI
 import VisionKit
+import AVFoundation
 
 /// Visible progress for the separate Windows companion. Password stays on iPhone
 /// during restores; original encrypted Vault blobs travel directly to the PC.
@@ -40,12 +41,32 @@ struct TakopiPCBridgeView: View {
                             notice = "Este contenedor de iOS no declaró permiso de cámara. Introduce la IP y el código manualmente o actualiza LiveContainer."
                             return
                         }
-                        guard DataScannerViewController.isSupported,
-                              DataScannerViewController.isAvailable else {
-                            notice = "El lector QR no está disponible. Puedes introducir la IP y el código manualmente."
+                        guard DataScannerViewController.isSupported else {
+                            notice = "Este dispositivo no admite lectura QR. Puedes introducir la IP y el código manualmente."
                             return
                         }
-                        showQRScanner = true
+                        switch AVCaptureDevice.authorizationStatus(for: .video) {
+                        case .authorized:
+                            if DataScannerViewController.isAvailable {
+                                showQRScanner = true
+                            } else {
+                                notice = "La cámara está ocupada o restringida. Introduce los datos manualmente."
+                            }
+                        case .notDetermined:
+                            AVCaptureDevice.requestAccess(for: .video) { allowed in
+                                DispatchQueue.main.async {
+                                    if allowed && DataScannerViewController.isAvailable {
+                                        showQRScanner = true
+                                    } else {
+                                        notice = "No hay acceso a la cámara. Puedes escribir la IP y el código de Windows."
+                                    }
+                                }
+                            }
+                        case .denied, .restricted:
+                            notice = "Takopi no tiene permiso de cámara. Actívalo en Ajustes o introduce los datos manualmente."
+                        @unknown default:
+                            notice = "El lector QR no está disponible."
+                        }
                     } label: {
                         Label("Escanear QR de Windows", systemImage: "qrcode.viewfinder")
                     }
