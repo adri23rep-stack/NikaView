@@ -1146,15 +1146,27 @@ final class PrivateVaultSession: ObservableObject {
         guard !requiredCopies.overflow, !estimatedBytes.overflow
         else { throw PrivateVaultError.notEnoughSpaceForExport }
         let tempDirectory = FileManager.default.temporaryDirectory
-        let freeImportant = try? tempDirectory.resourceValues(
+        let importantValues = try? tempDirectory.resourceValues(
             forKeys: [.volumeAvailableCapacityForImportantUsageKey]
-        ).volumeAvailableCapacityForImportantUsage
-        let freeNormal = try? tempDirectory.resourceValues(
+        )
+        let normalValues = try? tempDirectory.resourceValues(
             forKeys: [.volumeAvailableCapacityKey]
-        ).volumeAvailableCapacity
-        let capacities = [freeImportant.map(Int64.init), freeNormal.map(Int64.init)]
-            .compactMap { $0 }.filter { $0 >= 0 }
-        guard let available = capacities.min(), available >= estimatedBytes.partialValue
+        )
+        var available: Int64?
+        if let important = importantValues?.volumeAvailableCapacityForImportantUsage,
+           important >= 0 {
+            available = important
+        }
+        if let normal = normalValues?.volumeAvailableCapacity, normal >= 0 {
+            let normalBytes = Int64(normal)
+            if let previous = available {
+                available = min(previous, normalBytes)
+            } else {
+                available = normalBytes
+            }
+        }
+        guard let safeAvailable = available,
+              safeAvailable >= estimatedBytes.partialValue
         else { throw PrivateVaultError.notEnoughSpaceForExport }
 
         let temporaryContainer = tempDirectory
