@@ -51,6 +51,8 @@ struct PrivateVaultView: View {
     @State private var showImporter = false
     @State private var showBackupImportPicker = false
     @State private var showBackupExportPicker = false
+    @State private var showPCBackup = false
+    @State private var showPCRestore = false
     @State private var backupExportURL: URL?
     @State private var pendingBackupImportURL: URL?
     @State private var showBackupRestorePrompt = false
@@ -122,6 +124,12 @@ struct PrivateVaultView: View {
                     )
                 }
             }
+        }
+        .sheet(isPresented: $showPCBackup) {
+            TakopiPCBridgeView(operation: .backup).environmentObject(vault)
+        }
+        .sheet(isPresented: $showPCRestore) {
+            TakopiPCBridgeView(operation: .restore).environmentObject(vault)
         }
         .sheet(isPresented: $showBackupImportPicker, onDismiss: {
             if pendingBackupImportURL != nil { showBackupRestorePrompt = true }
@@ -661,6 +669,15 @@ struct PrivateVaultView: View {
                 .buttonStyle(.bordered)
                 .disabled(backupBusy)
 
+                Button {
+                    showPCRestore = true
+                } label: {
+                    Label("Restaurar Vault desde Windows", systemImage: "desktopcomputer")
+                        .font(.subheadline.weight(.medium))
+                }
+                .buttonStyle(.bordered)
+                .disabled(backupBusy || vault.isBusy)
+
                 if passwordPanelVisible {
                     passwordPanel
                 }
@@ -1139,6 +1156,18 @@ struct PrivateVaultView: View {
 
             Menu {
                 Section("Respaldo cifrado") {
+                    Button {
+                        showPCBackup = true
+                    } label: {
+                        Label("Respaldo directo a Windows (sin ZIP)", systemImage: "desktopcomputer")
+                    }
+                    .disabled(backupBusy || vault.isBusy)
+                    Button {
+                        showPCRestore = true
+                    } label: {
+                        Label("Restaurar desde Windows", systemImage: "externaldrive.badge.plus")
+                    }
+                    .disabled(backupBusy || vault.isBusy)
                     Button {
                         exportVaultBackup()
                     } label: {

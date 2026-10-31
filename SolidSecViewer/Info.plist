@@ -36,7 +36,7 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Nikaido Link y SMB usan la red local únicamente cuando eliges transferir archivos o conectarte a un servidor de tu red.</string>
+	<string>Takopi PC Bridge, Nikaido Link y SMB usan la red local solo si eliges respaldar, restaurar, transferir archivos o conectarte a tu PC/servidor.</string>
 	<!-- Video played through the file explorer can continue in system PiP. -->
 	<key>UIBackgroundModes</key>
 	<array><string>audio</string></array>

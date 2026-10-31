@@ -47,6 +47,48 @@ enum TakopiVaultBackup {
         "vault.json", "vault.backup.json", "index.ssv", "index.previous.ssv"
     ]
 
+
+    /// Consistent file inventory for a direct-to-PC backup. Only tiny metadata is
+    /// accumulated in memory; ciphertext stays in its original location.
+    static func snapshot(from root: URL) throws -> Manifest {
+        let fm = FileManager.default
+        var paths = configFiles.sorted()
+        for (folder, ext) in [("blobs", "ssvb"), ("thumbnails", "nkt")] {
+            let directory = root.appendingPathComponent(folder, isDirectory: true)
+            let files = try fm.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey],
+                options: [.skipsHiddenFiles]
+            )
+            for file in files where file.pathExtension.lowercased() == ext {
+                let path = folder + "/" + file.lastPathComponent
+                guard allowedPath(path) else { throw BackupError.invalidPackage }
+                paths.append(path)
+            }
+        }
+        guard paths.count <= maxFiles else { throw BackupError.tooManyEntries }
+        paths.sort()
+        var total: Int64 = 0
+        var records: [FileRecord] = []
+        for path in paths {
+            try Task.checkCancellation()
+            let source = root.appendingPathComponent(path)
+            let values = try source.resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]
+            )
+            guard values.isRegularFile == true, values.isSymbolicLink != true,
+                  let bytes = values.fileSize, bytes >= 0
+            else { throw BackupError.missingEncryptedFile }
+            let newTotal = total.addingReportingOverflow(Int64(bytes))
+            guard !newTotal.overflow, newTotal.partialValue <= maxTotalBytes
+            else { throw BackupError.tooManyEntries }
+            total = newTotal.partialValue
+            records.append(FileRecord(path: path, size: Int64(bytes),
+                                      sha256: try digest(source)))
+        }
+        return Manifest(format: "takopi-encrypted-vault", version: 1, files: records)
+    }
+
     static func create(from root: URL) throws -> URL {
         let fm = FileManager.default
         var paths = configFiles.sorted()
@@ -233,7 +275,7 @@ enum TakopiVaultBackup {
         }
     }
 
-    private static func allowedPath(_ path: String) -> Bool {
+    static func allowedPath(_ path: String) -> Bool {
         if configFiles.contains(path) { return true }
         let parts = path.split(separator: "/", omittingEmptySubsequences: false)
         guard parts.count == 2 else { return false }
@@ -249,7 +291,7 @@ enum TakopiVaultBackup {
         return false
     }
 
-    private static func digest(_ url: URL) throws -> String {
+    static func digest(_ url: URL) throws -> String {
         let input = try FileHandle(forReadingFrom: url)
         defer { try? input.close() }
         var hasher = SHA256()
