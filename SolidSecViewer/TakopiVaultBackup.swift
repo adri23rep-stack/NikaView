@@ -63,15 +63,27 @@ enum TakopiVaultBackup {
         let withMargin = requirement.partialValue.addingReportingOverflow(exportSafetyMargin)
         guard !withMargin.overflow else { throw BackupError.tooManyEntries }
 
-        let freeImportant = try? root.resourceValues(
+        let importantValues = try? root.resourceValues(
             forKeys: [.volumeAvailableCapacityForImportantUsageKey]
-        ).volumeAvailableCapacityForImportantUsage
-        let freeNormal = try? root.resourceValues(
+        )
+        let normalValues = try? root.resourceValues(
             forKeys: [.volumeAvailableCapacityKey]
-        ).volumeAvailableCapacity
-        let capacities = [freeImportant.map(Int64.init), freeNormal.map(Int64.init)]
-            .compactMap { $0 }.filter { $0 >= 0 }
-        guard let available = capacities.min(), available >= withMargin.partialValue
+        )
+        var available: Int64?
+        if let important = importantValues?.volumeAvailableCapacityForImportantUsage,
+           important >= 0 {
+            available = important
+        }
+        if let normal = normalValues?.volumeAvailableCapacity, normal >= 0 {
+            let normalBytes = Int64(normal)
+            if let previous = available {
+                available = min(previous, normalBytes)
+            } else {
+                available = normalBytes
+            }
+        }
+        guard let safeAvailable = available,
+              safeAvailable >= withMargin.partialValue
         else { throw BackupError.notEnoughSpace }
     }
 
