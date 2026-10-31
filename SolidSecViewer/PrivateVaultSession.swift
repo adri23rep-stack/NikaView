@@ -149,8 +149,9 @@ final class PrivateVaultSession: ObservableObject {
         hasVault = Self.hasExistingVaultArtifacts()
         // A previous iOS termination may have left a huge unfinished ZIP.
         // Delete stale exports off the main thread so startup remains responsive.
+        let staleCutoff = Date().addingTimeInterval(-60)
         Task.detached(priority: .utility) {
-            TakopiVaultBackup.cleanupStaleTemporaryBackups()
+            TakopiVaultBackup.cleanupStaleTemporaryBackups(olderThan: staleCutoff)
         }
     }
 
