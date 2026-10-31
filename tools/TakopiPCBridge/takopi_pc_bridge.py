@@ -400,7 +400,10 @@ def start_gui() -> None:
             listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             listener.bind(("0.0.0.0", PORT))
             listener.listen(1)
-            listener.settimeout(240)
+            # The iPhone hashes the original encrypted Vault before connecting.
+            # A 40+ GB Vault may need more than four minutes to finish that
+            # pass, so keep this one-use pairing open for up to 30 minutes.
+            listener.settimeout(30 * 60)
         except OSError as exc:
             listener.close()
             messagebox.showerror("No se pudo abrir el puerto", str(exc))
