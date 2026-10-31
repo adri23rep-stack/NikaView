@@ -133,6 +133,26 @@ enum TakopiVaultBackup {
         guard paths.count <= maxFiles else { throw BackupError.tooManyEntries }
         paths.sort()
 
+        // Check space using file sizes BEFORE hashing potentially tens of GB.
+        // Hashing itself is bounded, but the normal ZIP route must never start
+        // when the phone cannot hold a second encrypted copy.
+        var preliminarySize: Int64 = 0
+        for path in paths {
+            try Task.checkCancellation()
+            let file = root.appendingPathComponent(path)
+            let values = try file.resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]
+            )
+            guard values.isRegularFile == true, values.isSymbolicLink != true,
+                  let size = values.fileSize, size >= 0
+            else { throw BackupError.missingEncryptedFile }
+            let sum = preliminarySize.addingReportingOverflow(Int64(size))
+            guard !sum.overflow, sum.partialValue <= maxTotalBytes
+            else { throw BackupError.tooManyEntries }
+            preliminarySize = sum.partialValue
+        }
+        try verifyZIPExportCapacity(totalBytes: preliminarySize, at: root)
+
         let tempRoot = fm.temporaryDirectory.appendingPathComponent(
             "TakopiVaultBackup-" + UUID().uuidString, isDirectory: true
         )
@@ -292,6 +312,24 @@ enum TakopiVaultBackup {
         try PrivateVaultSession.applyProtection(to: stage)
         committed = true
         return stage
+    }
+
+    /// Clear unfinished legacy exports from prior terminated sessions.
+    /// Only paths created under Takopi's temporary directory are eligible.
+    static func cleanupStaleTemporaryBackups() {
+        let fm = FileManager.default
+        guard let children = try? fm.contentsOfDirectory(
+            at: fm.temporaryDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+        for child in children where child.lastPathComponent.hasPrefix("TakopiVaultBackup-") {
+            guard let values = try? child.resourceValues(
+                forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
+            ), values.isDirectory == true, values.isSymbolicLink != true
+            else { continue }
+            try? fm.removeItem(at: child)
+        }
     }
 
     static func removeTemporaryBackup(_ url: URL?) {
