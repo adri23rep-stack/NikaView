@@ -42,6 +42,29 @@ enum TakopiPCBridge {
         let error: String?
     }
 
+    /// Network framework delivers state callbacks on its own queue. This gate
+    /// protects completion across callbacks and never resumes a continuation twice.
+    private final class OpenGate: @unchecked Sendable {
+        private let lock = NSLock()
+        private var finished = false
+        private let continuation: CheckedContinuation<Void, Error>
+
+        init(_ continuation: CheckedContinuation<Void, Error>) {
+            self.continuation = continuation
+        }
+
+        func finish(_ result: Result<Void, Error>) {
+            lock.lock()
+            guard !finished else {
+                lock.unlock()
+                return
+            }
+            finished = true
+            lock.unlock()
+            continuation.resume(with: result)
+        }
+    }
+
     private final class Socket {
         private let connection: NWConnection
 
@@ -58,19 +81,15 @@ enum TakopiPCBridge {
 
         func open() async throws {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                var completed = false
+                let gate = OpenGate(continuation)
                 connection.stateUpdateHandler = { state in
-                    guard !completed else { return }
                     switch state {
                     case .ready:
-                        completed = true
-                        continuation.resume()
+                        gate.finish(.success(()))
                     case .failed(let error):
-                        completed = true
-                        continuation.resume(throwing: error)
+                        gate.finish(.failure(error))
                     case .cancelled:
-                        completed = true
-                        continuation.resume(throwing: BridgeError.disconnected)
+                        gate.finish(.failure(BridgeError.disconnected))
                     default: break
                     }
                 }
