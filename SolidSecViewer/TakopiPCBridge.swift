@@ -248,6 +248,8 @@ enum TakopiPCBridge {
         let total = try validate(manifest)
         let fm = FileManager.default
         let parent = liveVault.deletingLastPathComponent()
+        // A newly installed Takopi may not have created Application Support yet.
+        try fm.createDirectory(at: parent, withIntermediateDirectories: true)
         if let space = try? parent.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
             .volumeAvailableCapacityForImportantUsage, space > 0, total > space {
             throw BridgeError.noSpace
