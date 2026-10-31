@@ -301,15 +301,30 @@ def local_ipv4() -> str:
         return "IP de Windows (consulta ipconfig)"
 
 
+def pairing_uri(host: str, code: str, mode: bytes) -> str:
+    """A one-use LAN pairing QR; never contains a Vault password or files."""
+    try:
+        address = ipaddress.IPv4Address(host)
+    except ipaddress.AddressValueError as exc:
+        raise TransferError("No hay IPv4 local válida para el QR; usa ipconfig.") from exc
+    if not (address.is_private or address.is_link_local):
+        raise TransferError("El QR solo se permite en redes privadas.")
+    if not re.fullmatch(r"[0-9a-fA-F]{32}", code):
+        raise TransferError("Código de conexión inválido.")
+    if mode not in (b"B", b"R"):
+        raise TransferError("Modo inválido.")
+    return f"takopi-pc://pair?v=1&host={address}&port={PORT}&code={code.lower()}&mode={mode.decode('ascii')}"
+
+
 def start_gui() -> None:
     import tkinter as tk
     from tkinter import filedialog, messagebox, scrolledtext, simpledialog, ttk
 
     app = tk.Tk()
     app.title("Takopi PC Bridge · Vault")
-    app.geometry("820x590")
-    app.minsize(640, 480)
-    messages: queue.Queue[str] = queue.Queue()
+    app.geometry("850x760")
+    app.minsize(680, 610)
+    messages: queue.Queue[object] = queue.Queue()
     status_text = tk.StringVar(value="Selecciona dónde guardar o cuál respaldo restaurar.")
     connection_text = tk.StringVar(value="")
     root = ttk.Frame(app, padding=18)
@@ -318,6 +333,36 @@ def start_gui() -> None:
     ttk.Label(root, text="Vault cifrado · transferencia directa · verificación SHA-256").pack(anchor="w", pady=(0, 12))
     ttk.Label(root, textvariable=status_text, wraplength=740).pack(anchor="w", pady=4)
     ttk.Label(root, textvariable=connection_text, font=("Consolas", 11), wraplength=740).pack(anchor="w", pady=4)
+    qr_frame = ttk.Frame(root)
+    qr_frame.pack(fill="x", pady=(5, 2))
+    qr_label = ttk.Label(qr_frame, text="El código QR aparecerá al iniciar una sesión.")
+    qr_label.pack(side="left", padx=(8, 18))
+    qr_note = ttk.Label(qr_frame, text="QR temporal de una sola conexión.\nNo contiene tu contraseña.", wraplength=360)
+    qr_note.pack(side="left")
+    qr_image_state = {"image": None}
+
+    def hide_pairing_qr() -> None:
+        qr_label.configure(image="", text="El código QR aparecerá al iniciar una sesión.")
+        qr_image_state["image"] = None
+
+    def show_pairing_qr(host: str, token: bytes, mode: bytes) -> None:
+        try:
+            import qrcode
+            from PIL import ImageTk
+            payload = pairing_uri(host, token.hex(), mode)
+            qr = qrcode.QRCode(border=2, box_size=7, error_correction=qrcode.constants.ERROR_CORRECT_M)
+            qr.add_data(payload)
+            qr.make(fit=True)
+            rendered = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+            rendered.thumbnail((230, 230))
+            photo = ImageTk.PhotoImage(rendered, master=app)
+            qr_image_state["image"] = photo
+            qr_label.configure(image=photo, text="")
+            qr_note.configure(text="Escanea desde Takopi en el iPhone.\nLa IP y el código se llenan solos.")
+        except (ImportError, TransferError) as exc:
+            hide_pairing_qr()
+            qr_note.configure(text="QR no disponible: " + str(exc) + "\nPuedes introducir la IP y el código manualmente.")
+
     log = scrolledtext.ScrolledText(root, state="disabled", height=16)
     log.pack(side="bottom", fill="both", expand=True, pady=(14, 0))
     buttons = ttk.Frame(root)
@@ -334,7 +379,13 @@ def start_gui() -> None:
     def poll() -> None:
         try:
             while True:
-                write_line(messages.get_nowait())
+                message = messages.get_nowait()
+                if isinstance(message, tuple) and message == ("session_end",):
+                    current_server["socket"] = None
+                    connection_text.set("")
+                    hide_pairing_qr()
+                else:
+                    write_line(str(message))
         except queue.Empty:
             pass
         app.after(120, poll)
@@ -355,7 +406,9 @@ def start_gui() -> None:
             messagebox.showerror("No se pudo abrir el puerto", str(exc))
             return
         current_server["socket"] = listener
-        connection_text.set(f"IP de PC: {local_ipv4()}   Puerto: {PORT}   Código: {token.hex()}")
+        network_ip = local_ipv4()
+        connection_text.set(f"IP de PC: {network_ip}   Puerto: {PORT}   Código: {token.hex()}")
+        show_pairing_qr(network_ip, token, mode)
         write_line("En el iPhone: Takopi Vault → Respaldo a PC. Introduce IP y código."
                    if mode == b"B" else "En el iPhone: Takopi Vault → Restaurar desde PC. Introduce IP, código y contraseña de Vault.")
 
@@ -366,7 +419,8 @@ def start_gui() -> None:
                 messages.put("Sesión terminada: " + str(exc))
             finally:
                 listener.close()
-                app.after(0, lambda: (current_server.update(socket=None), connection_text.set("")))
+                # Tkinter UI must only be touched by its main thread.
+                messages.put(("session_end",))
         threading.Thread(target=task, daemon=True).start()
 
     def receive() -> None:
