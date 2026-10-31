@@ -61,6 +61,7 @@ enum PrivateVaultError: Error, LocalizedError {
     case unsupportedVersion
     case entryNotFound
     case notAFile
+    case notEnoughSpaceForExport
     case metadataCorrupt
     case indexMissing
     case indexInvalid
@@ -84,6 +85,8 @@ enum PrivateVaultError: Error, LocalizedError {
             return "No se encontró el elemento."
         case .notAFile:
             return "El elemento no es un archivo."
+        case .notEnoughSpaceForExport:
+            return "No hay espacio suficiente para exportar este archivo. La exportación descifrada necesita una copia temporal adicional en el iPhone."
         case .metadataCorrupt:
             return "La metadata de la bóveda está dañada y no hay una copia de respaldo válida."
         case .indexMissing:
@@ -1134,7 +1137,27 @@ final class PrivateVaultSession: ObservableObject {
         let operationGeneration = generation
         let source = Self.blobsURL.appendingPathComponent(blobName)
 
-        let temporaryContainer = FileManager.default.temporaryDirectory
+        // Decrypted file export writes temporary plaintext AND Files may copy
+        // it again. Reject early instead of filling device storage.
+        let fileBytes = entry.originalSize
+        guard fileBytes >= 0 else { throw PrivateVaultError.notEnoughSpaceForExport }
+        let requiredCopies = fileBytes.multipliedReportingOverflow(by: 2)
+        let estimatedBytes = requiredCopies.partialValue.addingReportingOverflow(256 * 1024 * 1024)
+        guard !requiredCopies.overflow, !estimatedBytes.overflow
+        else { throw PrivateVaultError.notEnoughSpaceForExport }
+        let tempDirectory = FileManager.default.temporaryDirectory
+        let freeImportant = try? tempDirectory.resourceValues(
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+        ).volumeAvailableCapacityForImportantUsage
+        let freeNormal = try? tempDirectory.resourceValues(
+            forKeys: [.volumeAvailableCapacityKey]
+        ).volumeAvailableCapacity
+        let capacities = [freeImportant.map(Int64.init), freeNormal.map(Int64.init)]
+            .compactMap { $0 }.filter { $0 >= 0 }
+        guard let available = capacities.min(), available >= estimatedBytes.partialValue
+        else { throw PrivateVaultError.notEnoughSpaceForExport }
+
+        let temporaryContainer = tempDirectory
             .appendingPathComponent(
                 "NikaidoExplorerVault-\(UUID().uuidString)",
                 isDirectory: true
