@@ -3,7 +3,10 @@ import SwiftUI
 /// Visible progress for the separate Windows companion. Password stays on iPhone
 /// during restores; original encrypted Vault blobs travel directly to the PC.
 struct TakopiPCBridgeView: View {
-    enum Operation { case backup, restore }
+    enum Operation: Identifiable {
+        case backup, restore
+        var id: Self { self }
+    }
     @EnvironmentObject private var vault: PrivateVaultSession
     @Environment(\.dismiss) private var dismiss
     let operation: Operation
