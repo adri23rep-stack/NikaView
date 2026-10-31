@@ -52,8 +52,7 @@ struct PrivateVaultView: View {
     @State private var showBackupImportPicker = false
     @State private var showBackupExportPicker = false
     @State private var showZIPBackupConfirmation = false
-    @State private var showPCBackup = false
-    @State private var showPCRestore = false
+    @State private var pcBridgeOperation: TakopiPCBridgeView.Operation?
     @State private var backupExportURL: URL?
     @State private var pendingBackupImportURL: URL?
     @State private var showBackupRestorePrompt = false
@@ -132,7 +131,7 @@ struct PrivateVaultView: View {
             titleVisibility: .visible
         ) {
             Button("Enviar directo a Windows (recomendado)") {
-                showPCBackup = true
+                pcBridgeOperation = .backup
             }
             Button("Crear ZIP dentro del iPhone") {
                 exportVaultBackup()
@@ -141,11 +140,8 @@ struct PrivateVaultView: View {
         } message: {
             Text("El ZIP de Archivos/iCloud necesita espacio temporal extra y puede requerir hasta dos copias. Para respaldar una bóveda grande en la PC sin duplicarla aquí, usa la transferencia directa.")
         }
-        .sheet(isPresented: $showPCBackup) {
-            TakopiPCBridgeView(operation: .backup).environmentObject(vault)
-        }
-        .sheet(isPresented: $showPCRestore) {
-            TakopiPCBridgeView(operation: .restore).environmentObject(vault)
+        .sheet(item: $pcBridgeOperation) { operation in
+            TakopiPCBridgeView(operation: operation).environmentObject(vault)
         }
         .sheet(isPresented: $showBackupImportPicker, onDismiss: {
             if pendingBackupImportURL != nil { showBackupRestorePrompt = true }
@@ -686,7 +682,7 @@ struct PrivateVaultView: View {
                 .disabled(backupBusy)
 
                 Button {
-                    showPCRestore = true
+                    pcBridgeOperation = .restore
                 } label: {
                     Label("Restaurar Vault desde Windows", systemImage: "desktopcomputer")
                         .font(.subheadline.weight(.medium))
@@ -1173,13 +1169,13 @@ struct PrivateVaultView: View {
             Menu {
                 Section("Respaldo cifrado") {
                     Button {
-                        showPCBackup = true
+                        pcBridgeOperation = .backup
                     } label: {
                         Label("Respaldo directo a Windows (sin ZIP)", systemImage: "desktopcomputer")
                     }
                     .disabled(backupBusy || vault.isBusy)
                     Button {
-                        showPCRestore = true
+                        pcBridgeOperation = .restore
                     } label: {
                         Label("Restaurar desde Windows", systemImage: "externaldrive.badge.plus")
                     }
