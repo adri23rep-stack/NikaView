@@ -70,13 +70,15 @@ enum TakopiPCBridge {
         return stage
     }
 
-    private static func notePhase(_ phase: String) throws {
-        try recordDiagnostic(phase)
+    // Logging must never block a direct backup when iPhone storage is scarce.
+    private static func notePhase(_ phase: String) {
+        try? recordDiagnostic(phase)
         UserDefaults.standard.set(phase, forKey: phaseKey)
         UserDefaults.standard.set(Date(), forKey: phaseTimeKey)
     }
 
     private static func clearPhase() {
+        try? FileManager.default.removeItem(at: diagnosticURL)
         UserDefaults.standard.removeObject(forKey: phaseKey)
         UserDefaults.standard.removeObject(forKey: phaseTimeKey)
     }
@@ -253,25 +255,33 @@ enum TakopiPCBridge {
                        progress: @escaping Progress) async throws {
         // Hash originals BEFORE sending; the receiver independently hashes all
         // transferred bytes and will not publish a backup until they match.
-        try notePhase("Leyendo y verificando la bóveda")
-        defer { clearPhase() }
+        notePhase("Leyendo y verificando la bóveda")
         progress(0, "Revisando archivos cifrados…")
+        // Large Vaults may have tens of thousands of tiny thumbnails. Avoid
+        // forcing a disk flush and scheduling a SwiftUI update for each entry.
+        var lastCheckpoint = Date.distantPast
+        func checkpoint(_ message: String) -> Bool {
+            let now = Date()
+            guard now.timeIntervalSince(lastCheckpoint) >= 2 else { return false }
+            lastCheckpoint = now
+            try? recordDiagnostic(message)
+            return true
+        }
         let manifest = try TakopiVaultBackup.snapshot(from: root, checkpoint: { stage in
-            try recordDiagnostic(stage)
+            _ = checkpoint(stage)
         }, progress: { path, bytes, size in
             let status = "Verificando: \(path)\nBytes: \(bytes) / \(size) (\(bytes / (1024 * 1024)) MB)"
-            try recordDiagnostic(status)
-            progress(0, status)
+            if checkpoint(status) { progress(0, status) }
         })
         let total = try validate(manifest)
-        try notePhase("Conectando con Windows")
+        notePhase("Conectando con Windows")
         progress(0, "Conectando con la PC…")
         let socket = try await connect(host: host, code: code, operation: 66) // B
         defer { socket.close() }
         try await socket.sendFrame(manifest)
         try await socket.expectOK()
 
-        try notePhase("Transmitiendo archivos cifrados a Windows")
+        notePhase("Transmitiendo archivos cifrados a Windows")
         var sent: Int64 = 0
         var lastReported: Int64 = 0
         for record in manifest.files {
@@ -307,7 +317,7 @@ enum TakopiPCBridge {
             try await socket.expectOK()
         }
 
-        try notePhase("Validando el respaldo recibido")
+        notePhase("Validando el respaldo recibido")
         // The index/config must still describe the exact snapshot copied.
         for name in ["index.ssv", "vault.json"] {
             guard let item = manifest.files.first(where: { $0.path == name }),
@@ -316,8 +326,9 @@ enum TakopiPCBridge {
         }
         try await socket.sendFrame(["done": true])
         try await socket.expectOK()
-        try notePhase("Respaldo completo y verificado")
+        notePhase("Respaldo completo y verificado")
         progress(1, "Copia completa y verificada en la PC")
+        clearPhase()
     }
 
     /// Downloads directly into a separate restore stage, never a ZIP or a plaintext cache.
