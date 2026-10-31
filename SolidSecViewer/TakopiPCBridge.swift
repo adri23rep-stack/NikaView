@@ -37,6 +37,29 @@ enum TakopiPCBridge {
     private static let required = Set(["vault.json", "vault.backup.json",
                                        "index.ssv", "index.previous.ssv"])
 
+    // Non-sensitive crash breadcrumb: if iOS kills the guest without throwing,
+    // Takopi can show the last completed stage after relaunch.
+    private static let phaseKey = "Takopi.PCBridge.backupPhase"
+    private static let phaseTimeKey = "Takopi.PCBridge.backupPhaseTime"
+
+    static var previousInterruptedStage: String? {
+        guard let stage = UserDefaults.standard.string(forKey: phaseKey),
+              let timestamp = UserDefaults.standard.object(forKey: phaseTimeKey) as? Date,
+              Date().timeIntervalSince(timestamp) < 48 * 3600
+        else { return nil }
+        return stage
+    }
+
+    private static func notePhase(_ phase: String) {
+        UserDefaults.standard.set(phase, forKey: phaseKey)
+        UserDefaults.standard.set(Date(), forKey: phaseTimeKey)
+    }
+
+    private static func clearPhase() {
+        UserDefaults.standard.removeObject(forKey: phaseKey)
+        UserDefaults.standard.removeObject(forKey: phaseTimeKey)
+    }
+
     private struct Ack: Codable {
         let ok: Bool
         let error: String?
@@ -209,14 +232,19 @@ enum TakopiPCBridge {
                        progress: @escaping Progress) async throws {
         // Hash originals BEFORE sending; the receiver independently hashes all
         // transferred bytes and will not publish a backup until they match.
+        notePhase("Leyendo y verificando la bóveda")
+        defer { clearPhase() }
         progress(0, "Revisando archivos cifrados…")
         let manifest = try TakopiVaultBackup.snapshot(from: root)
         let total = try validate(manifest)
+        notePhase("Conectando con Windows")
+        progress(0, "Conectando con la PC…")
         let socket = try await connect(host: host, code: code, operation: 66) // B
         defer { socket.close() }
         try await socket.sendFrame(manifest)
         try await socket.expectOK()
 
+        notePhase("Transmitiendo archivos cifrados a Windows")
         var sent: Int64 = 0
         var lastReported: Int64 = 0
         for record in manifest.files {
@@ -250,6 +278,7 @@ enum TakopiPCBridge {
             try await socket.expectOK()
         }
 
+        notePhase("Validando el respaldo recibido")
         // The index/config must still describe the exact snapshot copied.
         for name in ["index.ssv", "vault.json"] {
             guard let item = manifest.files.first(where: { $0.path == name }),
