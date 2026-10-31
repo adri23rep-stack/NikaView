@@ -1,0 +1,41 @@
+name: Takopi PC Bridge (Windows)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/TakopiPCBridge/**"
+      - ".github/workflows/takopi-pc-bridge.yml"
+  push:
+    branches: [main, feature/takopi-pc-bridge-streaming]
+    paths:
+      - "tools/TakopiPCBridge/**"
+      - ".github/workflows/takopi-pc-bridge.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-bridge:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test streaming and integrity checks
+        run: |
+          python -m py_compile tools/TakopiPCBridge/takopi_pc_bridge.py
+          python -m unittest discover -s tools/TakopiPCBridge -p "test_*.py" -v
+      - name: Package Windows EXE
+        run: |
+          python -m pip install --disable-pip-version-check pyinstaller cryptography
+          pyinstaller --noconfirm --clean --onefile --windowed --name Takopi-PC-Bridge tools/TakopiPCBridge/takopi_pc_bridge.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Takopi-PC-Bridge-Windows
+          path: dist/Takopi-PC-Bridge.exe
+          if-no-files-found: error
+          retention-days: 30
