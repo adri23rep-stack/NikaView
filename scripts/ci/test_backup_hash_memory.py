@@ -12,8 +12,8 @@ import tempfile
 root = Path(__file__).resolve().parents[2]
 source = (root / 'SolidSecViewer/TakopiVaultBackup.swift').read_text()
 method = source[source.index('    static func digest('):source.rfind('\n}')]
-method += source[source.index('    struct InventoryItem'):source.index('    static func snapshot(')]
-method += source[source.index('    static func allowedPath('):source.index('    static func digest(')]
+method += "\n" + source[source.index('    struct InventoryItem'):source.index('    static func snapshot(')]
+method += "\n" + source[source.index('    static func allowedPath('):source.index('    static func digest(')]
 method += """
     enum BackupError: Error { case invalidPackage, tooManyEntries, missingEncryptedFile }
     static let maxFiles = 100_000
