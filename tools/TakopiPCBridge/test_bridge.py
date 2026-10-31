@@ -9,7 +9,7 @@ from pathlib import Path
 
 from takopi_pc_bridge import (TransferError, allowed, validate_manifest,
                               receive_backup, serve_restore, send_frame,
-                              receive_frame, verify_backup)
+                              receive_frame, verify_backup, pairing_uri)
 
 
 def fixture(root):
@@ -31,6 +31,23 @@ def fixture(root):
 
 
 class TestBridge(unittest.TestCase):
+    def test_qr_pairs_backup_and_restore_with_single_use_code(self):
+        code = "0123456789abcdef0123456789abcdef"
+        self.assertEqual(
+            pairing_uri("192.168.1.12", code, b"B"),
+            "takopi-pc://pair?v=1&host=192.168.1.12&port=48933"
+            "&code=0123456789abcdef0123456789abcdef&mode=B",
+        )
+        self.assertTrue(pairing_uri("10.0.0.8", code, b"R").endswith("mode=R"))
+        for host, token, mode in [
+            ("8.8.8.8", code, b"B"),
+            ("not-an-ip", code, b"B"),
+            ("192.168.1.12", "secret", b"B"),
+            ("192.168.1.12", code, b"X"),
+        ]:
+            with self.assertRaises(TransferError):
+                pairing_uri(host, token, mode)
+
     def test_paths_and_duplicate_rejected(self):
         self.assertFalse(allowed("../vault.json"))
         self.assertFalse(allowed("blobs/../../index.ssv"))
