@@ -23,7 +23,7 @@ enum TakopiVaultBackup {
             case .vaultChanged:
                 return "La bóveda cambió mientras se creaba la copia. Reintenta el respaldo."
             case .notEnoughSpace:
-                return "No hay suficiente espacio para preparar o restaurar la copia cifrada."
+                return "No hay espacio suficiente para crear otro ZIP en el iPhone. Usa «Respaldo directo a Windows (sin ZIP)» para copiar los archivos cifrados a tu PC sin duplicarlos aquí."
             }
         }
     }
@@ -47,6 +47,110 @@ enum TakopiVaultBackup {
         "vault.json", "vault.backup.json", "index.ssv", "index.previous.ssv"
     ]
 
+    // The legacy ZIP export needs a full second on-device copy.
+    // Use direct PC streaming instead when storage is constrained.
+    private static let exportSafetyMargin: Int64 = 512 * 1024 * 1024
+
+    private static func verifyZIPExportCapacity(totalBytes: Int64, at root: URL) throws {
+        guard totalBytes >= 0 else { throw BackupError.tooManyEntries }
+        let extraZIPMetadata = max(Int64(1 * 1024 * 1024), totalBytes / 1000)
+        // UIDocumentPicker(forExporting:asCopy:true) can duplicate the ZIP
+        // again for an on-device destination. Reserve room for both copies.
+        let copies = totalBytes.multipliedReportingOverflow(by: 2)
+        guard !copies.overflow else { throw BackupError.tooManyEntries }
+        let requirement = copies.partialValue.addingReportingOverflow(extraZIPMetadata)
+        guard !requirement.overflow else { throw BackupError.tooManyEntries }
+        let withMargin = requirement.partialValue.addingReportingOverflow(exportSafetyMargin)
+        guard !withMargin.overflow else { throw BackupError.tooManyEntries }
+
+        let importantValues = try? root.resourceValues(
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+        )
+        let normalValues = try? root.resourceValues(
+            forKeys: [.volumeAvailableCapacityKey]
+        )
+        var available: Int64?
+        if let important = importantValues?.volumeAvailableCapacityForImportantUsage,
+           important >= 0 {
+            available = important
+        }
+        if let normal = normalValues?.volumeAvailableCapacity, normal >= 0 {
+            let normalBytes = Int64(normal)
+            if let previous = available {
+                available = min(previous, normalBytes)
+            } else {
+                available = normalBytes
+            }
+        }
+        guard let safeAvailable = available,
+              safeAvailable >= withMargin.partialValue
+        else { throw BackupError.notEnoughSpace }
+    }
+
+
+    /// Consistent file inventory for a direct-to-PC backup. Only tiny metadata is
+    /// accumulated in memory; ciphertext stays in its original location.
+    struct InventoryItem {
+        let path: String
+        let size: Int64
+    }
+
+    /// Metadata only: never opens or hashes blob contents.
+    static func inventory(from root: URL,
+                          checkpoint: (String) throws -> Void = { _ in }) throws -> [InventoryItem] {
+        let fm = FileManager.default
+        var paths = configFiles.sorted()
+        for (folder, ext) in [("blobs", "ssvb"), ("thumbnails", "nkt")] {
+            try checkpoint("Listando " + folder)
+            let directory = root.appendingPathComponent(folder, isDirectory: true)
+            let files = try fm.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey],
+                options: [.skipsHiddenFiles]
+            )
+            for file in files where file.pathExtension.lowercased() == ext {
+                let path = folder + "/" + file.lastPathComponent
+                guard allowedPath(path) else { throw BackupError.invalidPackage }
+                paths.append(path)
+            }
+        }
+        guard paths.count <= maxFiles else { throw BackupError.tooManyEntries }
+        paths.sort()
+        var total: Int64 = 0
+        var items: [InventoryItem] = []
+        for path in paths {
+            try Task.checkCancellation()
+            try checkpoint("Consultando tamaño: " + path)
+            let values = try root.appendingPathComponent(path).resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
+            guard values.isRegularFile == true, values.isSymbolicLink != true,
+                  let bytes = values.fileSize, bytes >= 0
+            else { throw BackupError.missingEncryptedFile }
+            let sum = total.addingReportingOverflow(Int64(bytes))
+            guard !sum.overflow, sum.partialValue <= maxTotalBytes
+            else { throw BackupError.tooManyEntries }
+            total = sum.partialValue
+            items.append(InventoryItem(path: path, size: Int64(bytes)))
+        }
+        return items
+    }
+
+    static func snapshot(from root: URL,
+                         checkpoint: (String) throws -> Void = { _ in },
+                         progress: (String, Int64, Int64) throws -> Void = { _, _, _ in }) throws -> Manifest {
+        let items = try inventory(from: root, checkpoint: checkpoint)
+        var records: [FileRecord] = []
+        for item in items {
+            try Task.checkCancellation()
+            try progress(item.path, 0, item.size)
+            let hash = try digest(root.appendingPathComponent(item.path)) { bytes in
+                try progress(item.path, bytes, item.size)
+            }
+            records.append(FileRecord(path: item.path, size: item.size, sha256: hash))
+        }
+        return Manifest(format: "takopi-encrypted-vault", version: 1, files: records)
+    }
+
     static func create(from root: URL) throws -> URL {
         let fm = FileManager.default
         var paths = configFiles.sorted()
@@ -66,6 +170,26 @@ enum TakopiVaultBackup {
 
         guard paths.count <= maxFiles else { throw BackupError.tooManyEntries }
         paths.sort()
+
+        // Check space using file sizes BEFORE hashing potentially tens of GB.
+        // Hashing itself is bounded, but the normal ZIP route must never start
+        // when the phone cannot hold a second encrypted copy.
+        var preliminarySize: Int64 = 0
+        for path in paths {
+            try Task.checkCancellation()
+            let file = root.appendingPathComponent(path)
+            let values = try file.resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]
+            )
+            guard values.isRegularFile == true, values.isSymbolicLink != true,
+                  let size = values.fileSize, size >= 0
+            else { throw BackupError.missingEncryptedFile }
+            let sum = preliminarySize.addingReportingOverflow(Int64(size))
+            guard !sum.overflow, sum.partialValue <= maxTotalBytes
+            else { throw BackupError.tooManyEntries }
+            preliminarySize = sum.partialValue
+        }
+        try verifyZIPExportCapacity(totalBytes: preliminarySize, at: root)
 
         let tempRoot = fm.temporaryDirectory.appendingPathComponent(
             "TakopiVaultBackup-" + UUID().uuidString, isDirectory: true
@@ -98,6 +222,9 @@ enum TakopiVaultBackup {
             files.append(FileRecord(path: path, size: Int64(size),
                                     sha256: try digest(source)))
         }
+
+        // Fail before creating a large ZIP, not after exhausting iOS storage.
+        try verifyZIPExportCapacity(totalBytes: total, at: root)
 
         let manifest = Manifest(format: "takopi-encrypted-vault",
                                 version: 1, files: files)
@@ -225,6 +352,27 @@ enum TakopiVaultBackup {
         return stage
     }
 
+    /// Clear unfinished legacy exports from prior terminated sessions.
+    /// Only paths created under Takopi's temporary directory are eligible.
+    static func cleanupStaleTemporaryBackups(olderThan cutoff: Date) {
+        let fm = FileManager.default
+        guard let children = try? fm.contentsOfDirectory(
+            at: fm.temporaryDirectory,
+            includingPropertiesForKeys: [
+                .isDirectoryKey, .isSymbolicLinkKey, .creationDateKey
+            ],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+        for child in children where child.lastPathComponent.hasPrefix("TakopiVaultBackup-") {
+            guard let values = try? child.resourceValues(
+                forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .creationDateKey]
+            ), values.isDirectory == true, values.isSymbolicLink != true,
+               let created = values.creationDate, created < cutoff
+            else { continue }
+            try? fm.removeItem(at: child)
+        }
+    }
+
     static func removeTemporaryBackup(_ url: URL?) {
         guard let url else { return }
         let parent = url.deletingLastPathComponent()
@@ -233,7 +381,7 @@ enum TakopiVaultBackup {
         }
     }
 
-    private static func allowedPath(_ path: String) -> Bool {
+    static func allowedPath(_ path: String) -> Bool {
         if configFiles.contains(path) { return true }
         let parts = path.split(separator: "/", omittingEmptySubsequences: false)
         guard parts.count == 2 else { return false }
@@ -249,16 +397,30 @@ enum TakopiVaultBackup {
         return false
     }
 
-    private static func digest(_ url: URL) throws -> String {
+    static func digest(_ url: URL, progress: (Int64) throws -> Void = { _ in }) throws -> String {
         let input = try FileHandle(forReadingFrom: url)
         defer { try? input.close() }
         var hasher = SHA256()
+        var processed: Int64 = 0
+        var lastReport: Int64 = 0
         while true {
             try Task.checkCancellation()
-            let data = try input.read(upToCount: 256 * 1024) ?? Data()
-            if data.isEmpty { break }
-            hasher.update(data: data)
+            // Foundation can autorelease NSData backing FileHandle reads. A
+            // detached task has no per-iteration run-loop pool: drain each chunk
+            // before reading the next one, even for multi-GB encrypted blobs.
+            let count: Int = try autoreleasepool {
+                let data = try input.read(upToCount: 256 * 1024) ?? Data()
+                if !data.isEmpty { hasher.update(data: data) }
+                return data.count
+            }
+            if count == 0 { break }
+            processed += Int64(count)
+            if processed - lastReport >= 32 * 1024 * 1024 {
+                lastReport = processed
+                try progress(processed)
+            }
         }
+        try progress(processed)
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }

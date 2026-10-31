@@ -98,6 +98,9 @@ jobs:
             exit 1
           fi
 
+      - name: Large Vault hash memory regression
+        run: python3 scripts/ci/test_backup_hash_memory.py
+
       - name: Crypto and .sec parser self-test
         id: selftest
         continue-on-error: true

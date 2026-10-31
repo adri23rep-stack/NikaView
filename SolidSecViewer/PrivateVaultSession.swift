@@ -61,6 +61,7 @@ enum PrivateVaultError: Error, LocalizedError {
     case unsupportedVersion
     case entryNotFound
     case notAFile
+    case notEnoughSpaceForExport
     case metadataCorrupt
     case indexMissing
     case indexInvalid
@@ -84,6 +85,8 @@ enum PrivateVaultError: Error, LocalizedError {
             return "No se encontró el elemento."
         case .notAFile:
             return "El elemento no es un archivo."
+        case .notEnoughSpaceForExport:
+            return "No hay espacio suficiente para exportar este archivo. La exportación descifrada necesita una copia temporal adicional en el iPhone."
         case .metadataCorrupt:
             return "La metadata de la bóveda está dañada y no hay una copia de respaldo válida."
         case .indexMissing:
@@ -147,6 +150,12 @@ final class PrivateVaultSession: ObservableObject {
     init() {
         Self.cleanupStaleTemporaryPlaintext()
         hasVault = Self.hasExistingVaultArtifacts()
+        // A previous iOS termination may have left a huge unfinished ZIP.
+        // Delete stale exports off the main thread so startup remains responsive.
+        let staleCutoff = Date().addingTimeInterval(-60)
+        Task.detached(priority: .utility) {
+            TakopiVaultBackup.cleanupStaleTemporaryBackups(olderThan: staleCutoff)
+        }
     }
 
     /// La copia contiene solamente ciphertext y metadata de desbloqueo.
@@ -199,6 +208,91 @@ final class PrivateVaultSession: ObservableObject {
             throw error
         }
 
+        try publishStagedEncryptedBackup(staged, previousGeneration: previousGeneration)
+    }
+
+    /// Isolate directory/metadata failures without opening encrypted file contents.
+    func diagnosePCBackupInventory() async throws -> String {
+        guard isUnlocked else { throw PrivateVaultError.locked }
+        guard !isBusy, !LANTransferActivity.shared.isActive else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+        isBusy = true
+        defer { isBusy = false }
+        return try await Task.detached(priority: .utility) {
+            // Diagnostics are best-effort; never fail an inventory just
+            // because a tiny status log cannot be written on a full iPhone.
+            try? TakopiPCBridge.recordDiagnostic("Prueba: iniciando listado sin leer contenido")
+            var lastDiagnostic = Date.distantPast
+            let items = try TakopiVaultBackup.inventory(from: Self.vaultRootURL) { stage in
+                let now = Date()
+                if now.timeIntervalSince(lastDiagnostic) >= 2 {
+                    lastDiagnostic = now
+                    try? TakopiPCBridge.recordDiagnostic("Prueba de listado: " + stage)
+                }
+            }
+            let total = items.reduce(Int64(0)) { $0 + $1.size }
+            let result = "Listado completado: \(items.count) archivos, \(total / (1024 * 1024)) MB. No se leyó su contenido."
+            try? TakopiPCBridge.recordDiagnostic(result)
+            return result
+        }.value
+    }
+
+    /// Export ciphertext directly to the PC over TCP. No extra archive is created.
+    func exportEncryptedPCBackup(host: String, code: String,
+                                 progress: @escaping TakopiPCBridge.Progress) async throws {
+        guard isUnlocked else { throw PrivateVaultError.locked }
+        guard !isBusy, !LANTransferActivity.shared.isActive else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+        isBusy = true
+        defer { isBusy = false }
+        let expected = generation
+        try await Task.detached(priority: .utility) {
+            try await TakopiPCBridge.backup(
+                host: host, code: code, root: Self.vaultRootURL, progress: progress
+            )
+        }.value
+        guard generation == expected, isUnlocked else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+    }
+
+    /// Restore ciphertext to a sibling directory; authenticate password and
+    /// encrypted index BEFORE replacing the live Vault.
+    func importEncryptedPCBackup(host: String, code: String, password: String,
+                                 progress: @escaping TakopiPCBridge.Progress) async throws {
+        guard !password.isEmpty else { throw PrivateVaultError.wrongPassword }
+        guard !isBusy, !LANTransferActivity.shared.isActive else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+        isBusy = true
+        let previousGeneration = generation
+        let staged: URL
+        do {
+            staged = try await Task.detached(priority: .userInitiated) {
+                let stage = try await TakopiPCBridge.receiveRestore(
+                    host: host, code: code, liveVault: Self.vaultRootURL,
+                    progress: progress
+                )
+                do {
+                    try Self.authenticateEncryptedBackup(at: stage, password: password)
+                } catch {
+                    try? FileManager.default.removeItem(at: stage)
+                    throw error
+                }
+                return stage
+            }.value
+        } catch {
+            isBusy = false
+            throw error
+        }
+        try publishStagedEncryptedBackup(staged, previousGeneration: previousGeneration)
+    }
+
+    private func publishStagedEncryptedBackup(
+        _ staged: URL, previousGeneration: UInt64
+    ) throws {
         guard generation == previousGeneration else {
             try? FileManager.default.removeItem(at: staged)
             isBusy = false
@@ -1070,7 +1164,39 @@ final class PrivateVaultSession: ObservableObject {
         let operationGeneration = generation
         let source = Self.blobsURL.appendingPathComponent(blobName)
 
-        let temporaryContainer = FileManager.default.temporaryDirectory
+        // Decrypted file export writes temporary plaintext AND Files may copy
+        // it again. Reject early instead of filling device storage.
+        let fileBytes = entry.originalSize
+        guard fileBytes >= 0 else { throw PrivateVaultError.notEnoughSpaceForExport }
+        let requiredCopies = fileBytes.multipliedReportingOverflow(by: 2)
+        let estimatedBytes = requiredCopies.partialValue.addingReportingOverflow(256 * 1024 * 1024)
+        guard !requiredCopies.overflow, !estimatedBytes.overflow
+        else { throw PrivateVaultError.notEnoughSpaceForExport }
+        let tempDirectory = FileManager.default.temporaryDirectory
+        let importantValues = try? tempDirectory.resourceValues(
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+        )
+        let normalValues = try? tempDirectory.resourceValues(
+            forKeys: [.volumeAvailableCapacityKey]
+        )
+        var available: Int64?
+        if let important = importantValues?.volumeAvailableCapacityForImportantUsage,
+           important >= 0 {
+            available = important
+        }
+        if let normal = normalValues?.volumeAvailableCapacity, normal >= 0 {
+            let normalBytes = Int64(normal)
+            if let previous = available {
+                available = min(previous, normalBytes)
+            } else {
+                available = normalBytes
+            }
+        }
+        guard let safeAvailable = available,
+              safeAvailable >= estimatedBytes.partialValue
+        else { throw PrivateVaultError.notEnoughSpaceForExport }
+
+        let temporaryContainer = tempDirectory
             .appendingPathComponent(
                 "NikaidoExplorerVault-\(UUID().uuidString)",
                 isDirectory: true

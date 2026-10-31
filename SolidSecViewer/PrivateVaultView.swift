@@ -51,6 +51,8 @@ struct PrivateVaultView: View {
     @State private var showImporter = false
     @State private var showBackupImportPicker = false
     @State private var showBackupExportPicker = false
+    @State private var showZIPBackupConfirmation = false
+    @State private var pcBridgeOperation: TakopiPCBridgeView.Operation?
     @State private var backupExportURL: URL?
     @State private var pendingBackupImportURL: URL?
     @State private var showBackupRestorePrompt = false
@@ -122,6 +124,24 @@ struct PrivateVaultView: View {
                     )
                 }
             }
+        }
+        .confirmationDialog(
+            "Exportación cifrada de Takopi Vault",
+            isPresented: $showZIPBackupConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Enviar directo a Windows (recomendado)") {
+                pcBridgeOperation = .backup
+            }
+            Button("Crear ZIP dentro del iPhone") {
+                exportVaultBackup()
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("El ZIP de Archivos/iCloud necesita espacio temporal extra y puede requerir hasta dos copias. Para respaldar una bóveda grande en la PC sin duplicarla aquí, usa la transferencia directa.")
+        }
+        .sheet(item: $pcBridgeOperation) { operation in
+            TakopiPCBridgeView(operation: operation).environmentObject(vault)
         }
         .sheet(isPresented: $showBackupImportPicker, onDismiss: {
             if pendingBackupImportURL != nil { showBackupRestorePrompt = true }
@@ -661,6 +681,15 @@ struct PrivateVaultView: View {
                 .buttonStyle(.bordered)
                 .disabled(backupBusy)
 
+                Button {
+                    pcBridgeOperation = .restore
+                } label: {
+                    Label("Restaurar Vault desde Windows", systemImage: "desktopcomputer")
+                        .font(.subheadline.weight(.medium))
+                }
+                .buttonStyle(.bordered)
+                .disabled(backupBusy || vault.isBusy)
+
                 if passwordPanelVisible {
                     passwordPanel
                 }
@@ -1141,9 +1170,21 @@ struct PrivateVaultView: View {
             Menu {
                 Section("Respaldo cifrado") {
                     Button {
-                        exportVaultBackup()
+                        pcBridgeOperation = .backup
                     } label: {
-                        Label("Exportar copia completa cifrada", systemImage: "externaldrive.badge.plus")
+                        Label("Respaldo directo a Windows (sin ZIP)", systemImage: "desktopcomputer")
+                    }
+                    .disabled(backupBusy || vault.isBusy)
+                    Button {
+                        pcBridgeOperation = .restore
+                    } label: {
+                        Label("Restaurar desde Windows", systemImage: "externaldrive.badge.plus")
+                    }
+                    .disabled(backupBusy || vault.isBusy)
+                    Button {
+                        showZIPBackupConfirmation = true
+                    } label: {
+                        Label("Exportar ZIP a Archivos (requiere espacio)", systemImage: "externaldrive.badge.plus")
                     }
                     .disabled(backupBusy || vault.isBusy)
                     Button {
