@@ -199,6 +199,7 @@ enum TakopiPCBridge {
         try await socket.expectOK()
 
         var sent: Int64 = 0
+        var lastReported: Int64 = 0
         for record in manifest.files {
             try Task.checkCancellation()
             let url = root.appendingPathComponent(record.path)
@@ -217,7 +218,10 @@ enum TakopiPCBridge {
                     try await socket.send(data)
                     remaining -= Int64(data.count)
                     sent += Int64(data.count)
-                    progress(total == 0 ? 1 : Double(sent) / Double(total), record.path)
+                    if sent - lastReported >= 8 * 1024 * 1024 || remaining == 0 {
+                        lastReported = sent
+                        progress(total == 0 ? 1 : Double(sent) / Double(total), record.path)
+                    }
                 }
                 try handle.close()
             } catch {
@@ -261,6 +265,7 @@ enum TakopiPCBridge {
         defer { if !success { try? fm.removeItem(at: stage) } }
         try await socket.sendFrame(Ack(ok: true, error: nil))
         var received: Int64 = 0
+        var lastReported: Int64 = 0
 
         for record in manifest.files {
             try Task.checkCancellation()
@@ -282,7 +287,10 @@ enum TakopiPCBridge {
                     hash.update(data: part)
                     remaining -= Int64(part.count)
                     received += Int64(part.count)
-                    progress(total == 0 ? 1 : Double(received) / Double(total), record.path)
+                    if received - lastReported >= 8 * 1024 * 1024 || remaining == 0 {
+                        lastReported = received
+                        progress(total == 0 ? 1 : Double(received) / Double(total), record.path)
+                    }
                 }
                 try handle.close()
             } catch {
