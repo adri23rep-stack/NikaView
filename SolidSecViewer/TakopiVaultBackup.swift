@@ -23,7 +23,7 @@ enum TakopiVaultBackup {
             case .vaultChanged:
                 return "La bóveda cambió mientras se creaba la copia. Reintenta el respaldo."
             case .notEnoughSpace:
-                return "No hay suficiente espacio para preparar o restaurar la copia cifrada."
+                return "No hay espacio suficiente para crear otro ZIP en el iPhone. Usa «Respaldo directo a Windows (sin ZIP)» para copiar los archivos cifrados a tu PC sin duplicarlos aquí."
             }
         }
     }
@@ -46,6 +46,30 @@ enum TakopiVaultBackup {
     private static let configFiles: Set<String> = [
         "vault.json", "vault.backup.json", "index.ssv", "index.previous.ssv"
     ]
+
+    // The legacy ZIP export needs a full second on-device copy.
+    // Use direct PC streaming instead when storage is constrained.
+    private static let exportSafetyMargin: Int64 = 512 * 1024 * 1024
+
+    private static func verifyZIPExportCapacity(totalBytes: Int64, at root: URL) throws {
+        guard totalBytes >= 0 else { throw BackupError.tooManyEntries }
+        let extraZIPMetadata = max(Int64(1 * 1024 * 1024), totalBytes / 1000)
+        let requirement = totalBytes.addingReportingOverflow(extraZIPMetadata)
+        guard !requirement.overflow else { throw BackupError.tooManyEntries }
+        let withMargin = requirement.partialValue.addingReportingOverflow(exportSafetyMargin)
+        guard !withMargin.overflow else { throw BackupError.tooManyEntries }
+
+        let freeImportant = try? root.resourceValues(
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+        ).volumeAvailableCapacityForImportantUsage
+        let freeNormal = try? root.resourceValues(
+            forKeys: [.volumeAvailableCapacityKey]
+        ).volumeAvailableCapacity
+        let capacities = [freeImportant.map(Int64.init), freeNormal.map(Int64.init)]
+            .compactMap { $0 }.filter { $0 >= 0 }
+        guard let available = capacities.min(), available >= withMargin.partialValue
+        else { throw BackupError.notEnoughSpace }
+    }
 
 
     /// Consistent file inventory for a direct-to-PC backup. Only tiny metadata is
@@ -140,6 +164,9 @@ enum TakopiVaultBackup {
             files.append(FileRecord(path: path, size: Int64(size),
                                     sha256: try digest(source)))
         }
+
+        // Fail before creating a large ZIP, not after exhausting iOS storage.
+        try verifyZIPExportCapacity(totalBytes: total, at: root)
 
         let manifest = Manifest(format: "takopi-encrypted-vault",
                                 version: 1, files: files)
