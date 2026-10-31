@@ -85,12 +85,35 @@ struct TakopiPCBridgeView: View {
                     }
                 }
                 if let interruptedStage {
-                    Section("Diagnóstico del respaldo anterior") {
-                        Text("Última etapa registrada: \(interruptedStage)")
+                    Section("Registro de diagnóstico · build 58") {
+                        Text(interruptedStage)
+                            .textSelection(.enabled)
                             .font(.footnote)
                         Text("Si Takopi se cerró inesperadamente, este dato ayuda a encontrar el punto del fallo. No se borró la bóveda por iniciar el respaldo.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    }
+                }
+                if operation == .backup {
+                    Section("Prueba sin conexión al PC") {
+                        Button("1. Probar listado sin leer archivos") {
+                            busy = true
+                            current = "Probando listado…"
+                            Task { @MainActor in
+                                defer {
+                                    busy = false
+                                    interruptedStage = TakopiPCBridge.previousInterruptedStage
+                                }
+                                do {
+                                    notice = try await vault.diagnosePCBackupInventory()
+                                } catch {
+                                    notice = error.localizedDescription
+                                }
+                            }
+                        }
+                        .disabled(busy)
+                        Text("Solo consulta nombres cifrados y tamaños. No envía ni modifica la bóveda.")
+                            .font(.caption)
                     }
                 }
                 Section {
@@ -191,6 +214,7 @@ struct TakopiPCBridgeView: View {
             } catch {
                 notice = error.localizedDescription
                 current = "Transferencia no completada"
+                interruptedStage = TakopiPCBridge.previousInterruptedStage
             }
         }
     }

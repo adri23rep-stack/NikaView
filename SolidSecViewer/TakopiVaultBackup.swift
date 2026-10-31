@@ -90,11 +90,18 @@ enum TakopiVaultBackup {
 
     /// Consistent file inventory for a direct-to-PC backup. Only tiny metadata is
     /// accumulated in memory; ciphertext stays in its original location.
-    static func snapshot(from root: URL,
-                         progress: (Int64) -> Void = { _ in }) throws -> Manifest {
+    struct InventoryItem {
+        let path: String
+        let size: Int64
+    }
+
+    /// Metadata only: never opens or hashes blob contents.
+    static func inventory(from root: URL,
+                          checkpoint: (String) throws -> Void = { _ in }) throws -> [InventoryItem] {
         let fm = FileManager.default
         var paths = configFiles.sorted()
         for (folder, ext) in [("blobs", "ssvb"), ("thumbnails", "nkt")] {
+            try checkpoint("Listando " + folder)
             let directory = root.appendingPathComponent(folder, isDirectory: true)
             let files = try fm.contentsOfDirectory(
                 at: directory,
@@ -110,26 +117,36 @@ enum TakopiVaultBackup {
         guard paths.count <= maxFiles else { throw BackupError.tooManyEntries }
         paths.sort()
         var total: Int64 = 0
-        var records: [FileRecord] = []
-        var checkedBytes: Int64 = 0
+        var items: [InventoryItem] = []
         for path in paths {
             try Task.checkCancellation()
-            let source = root.appendingPathComponent(path)
-            let values = try source.resourceValues(
-                forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]
-            )
+            try checkpoint("Consultando tamaño: " + path)
+            let values = try root.appendingPathComponent(path).resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
             guard values.isRegularFile == true, values.isSymbolicLink != true,
                   let bytes = values.fileSize, bytes >= 0
             else { throw BackupError.missingEncryptedFile }
-            let newTotal = total.addingReportingOverflow(Int64(bytes))
-            guard !newTotal.overflow, newTotal.partialValue <= maxTotalBytes
+            let sum = total.addingReportingOverflow(Int64(bytes))
+            guard !sum.overflow, sum.partialValue <= maxTotalBytes
             else { throw BackupError.tooManyEntries }
-            total = newTotal.partialValue
-            let hash = try digest(source) { bytesRead in
-                progress(checkedBytes + bytesRead)
+            total = sum.partialValue
+            items.append(InventoryItem(path: path, size: Int64(bytes)))
+        }
+        return items
+    }
+
+    static func snapshot(from root: URL,
+                         checkpoint: (String) throws -> Void = { _ in },
+                         progress: (String, Int64, Int64) throws -> Void = { _, _, _ in }) throws -> Manifest {
+        let items = try inventory(from: root, checkpoint: checkpoint)
+        var records: [FileRecord] = []
+        for item in items {
+            try Task.checkCancellation()
+            try progress(item.path, 0, item.size)
+            let hash = try digest(root.appendingPathComponent(item.path)) { bytes in
+                try progress(item.path, bytes, item.size)
             }
-            checkedBytes += Int64(bytes)
-            records.append(FileRecord(path: path, size: Int64(bytes), sha256: hash))
+            records.append(FileRecord(path: item.path, size: item.size, sha256: hash))
         }
         return Manifest(format: "takopi-encrypted-vault", version: 1, files: records)
     }
@@ -380,7 +397,7 @@ enum TakopiVaultBackup {
         return false
     }
 
-    static func digest(_ url: URL, progress: (Int64) -> Void = { _ in }) throws -> String {
+    static func digest(_ url: URL, progress: (Int64) throws -> Void = { _ in }) throws -> String {
         let input = try FileHandle(forReadingFrom: url)
         defer { try? input.close() }
         var hasher = SHA256()
@@ -400,10 +417,10 @@ enum TakopiVaultBackup {
             processed += Int64(count)
             if processed - lastReport >= 32 * 1024 * 1024 {
                 lastReport = processed
-                progress(processed)
+                try progress(processed)
             }
         }
-        progress(processed)
+        try progress(processed)
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }

@@ -12,6 +12,14 @@ import tempfile
 root = Path(__file__).resolve().parents[2]
 source = (root / 'SolidSecViewer/TakopiVaultBackup.swift').read_text()
 method = source[source.index('    static func digest('):source.rfind('\n}')]
+method += source[source.index('    struct InventoryItem'):source.index('    static func snapshot(')]
+method += source[source.index('    static func allowedPath('):source.index('    static func digest(')]
+method += """
+    enum BackupError: Error { case invalidPackage, tooManyEntries, missingEncryptedFile }
+    static let maxFiles = 100_000
+    static let maxTotalBytes: Int64 = 500 * 1024 * 1024 * 1024
+    static let configFiles: Set<String> = ["vault.json", "vault.backup.json", "index.ssv", "index.previous.ssv"]
+"""
 size = 512 * 1024 * 1024
 expected = hashlib.sha256()
 for _ in range(512):
@@ -38,7 +46,30 @@ with tempfile.TemporaryDirectory() as directory:
             }
             precondition(digest == expected, "Ciphertext checksum changed")
             precondition(last == 512 * 1024 * 1024 && reports >= 16)
-            print("Production hash: checksum and progress OK")
+            enum Stop: Error { case checkpoint }
+            do {
+                _ = try Production.digest(URL(fileURLWithPath: path)) { _ in
+                    throw Stop.checkpoint
+                }
+                preconditionFailure("A failed diagnostic write must stop hashing")
+            } catch Stop.checkpoint {}
+            let root = URL(fileURLWithPath: path).deletingLastPathComponent().appendingPathComponent("vault")
+            let fm = FileManager.default
+            for folder in ["blobs", "thumbnails"] {
+                try fm.createDirectory(at: root.appendingPathComponent(folder), withIntermediateDirectories: true)
+            }
+            for name in Production.configFiles {
+                try Data([1, 2, 3]).write(to: root.appendingPathComponent(name))
+            }
+            let blob = root.appendingPathComponent("blobs/00000000-0000-0000-0000-000000000001.ssvb")
+            try Data([4, 5, 6]).write(to: blob)
+            try fm.setAttributes([.posixPermissions: 0], ofItemAtPath: blob.path)
+            var checkpoints = [String]()
+            let items = try Production.inventory(from: root) { checkpoints.append($0) }
+            precondition(items.count == 5 && items.reduce(Int64(0)) { $0 + $1.size } == 15)
+            precondition(checkpoints.contains("Consultando tamaño: " + items[0].path))
+            try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: blob.path)
+            print("Production hash, diagnostic failure propagation and metadata-only inventory: OK")
         }.value
     }
 }

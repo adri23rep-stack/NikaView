@@ -42,7 +42,27 @@ enum TakopiPCBridge {
     private static let phaseKey = "Takopi.PCBridge.backupPhase"
     private static let phaseTimeKey = "Takopi.PCBridge.backupPhaseTime"
 
+    private static var diagnosticURL: URL {
+        PrivateVaultSession.vaultRootURL.deletingLastPathComponent()
+            .appendingPathComponent("Takopi-PC-Diagnostic.txt")
+    }
+
+    // Only encrypted file identifiers and byte counts; never passwords or pairing codes.
+    static func recordDiagnostic(_ message: String) throws {
+        let url = diagnosticURL
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        let text = "Build 58 · " + ISO8601DateFormatter().string(from: Date()) + "\n" + message
+        try Data(text.utf8).write(to: url, options: .atomic)
+        let handle = try FileHandle(forWritingTo: url)
+        defer { try? handle.close() }
+        try handle.synchronize()
+    }
+
     static var previousInterruptedStage: String? {
+        if let text = try? String(contentsOf: diagnosticURL, encoding: .utf8) {
+            return text
+        }
         guard let stage = UserDefaults.standard.string(forKey: phaseKey),
               let timestamp = UserDefaults.standard.object(forKey: phaseTimeKey) as? Date,
               Date().timeIntervalSince(timestamp) < 48 * 3600
@@ -50,7 +70,8 @@ enum TakopiPCBridge {
         return stage
     }
 
-    private static func notePhase(_ phase: String) {
+    private static func notePhase(_ phase: String) throws {
+        try recordDiagnostic(phase)
         UserDefaults.standard.set(phase, forKey: phaseKey)
         UserDefaults.standard.set(Date(), forKey: phaseTimeKey)
     }
@@ -232,21 +253,25 @@ enum TakopiPCBridge {
                        progress: @escaping Progress) async throws {
         // Hash originals BEFORE sending; the receiver independently hashes all
         // transferred bytes and will not publish a backup until they match.
-        notePhase("Leyendo y verificando la bóveda")
+        try notePhase("Leyendo y verificando la bóveda")
         defer { clearPhase() }
         progress(0, "Revisando archivos cifrados…")
-        let manifest = try TakopiVaultBackup.snapshot(from: root) { bytes in
-            progress(0, "Verificando bóveda: \(bytes / (1024 * 1024)) MB revisados…")
-        }
+        let manifest = try TakopiVaultBackup.snapshot(from: root, checkpoint: { stage in
+            try recordDiagnostic(stage)
+        }, progress: { path, bytes, size in
+            let status = "Verificando: \(path)\nBytes: \(bytes) / \(size) (\(bytes / (1024 * 1024)) MB)"
+            try recordDiagnostic(status)
+            progress(0, status)
+        })
         let total = try validate(manifest)
-        notePhase("Conectando con Windows")
+        try notePhase("Conectando con Windows")
         progress(0, "Conectando con la PC…")
         let socket = try await connect(host: host, code: code, operation: 66) // B
         defer { socket.close() }
         try await socket.sendFrame(manifest)
         try await socket.expectOK()
 
-        notePhase("Transmitiendo archivos cifrados a Windows")
+        try notePhase("Transmitiendo archivos cifrados a Windows")
         var sent: Int64 = 0
         var lastReported: Int64 = 0
         for record in manifest.files {
@@ -282,7 +307,7 @@ enum TakopiPCBridge {
             try await socket.expectOK()
         }
 
-        notePhase("Validando el respaldo recibido")
+        try notePhase("Validando el respaldo recibido")
         // The index/config must still describe the exact snapshot copied.
         for name in ["index.ssv", "vault.json"] {
             guard let item = manifest.files.first(where: { $0.path == name }),
@@ -291,6 +316,7 @@ enum TakopiPCBridge {
         }
         try await socket.sendFrame(["done": true])
         try await socket.expectOK()
+        try notePhase("Respaldo completo y verificado")
         progress(1, "Copia completa y verificada en la PC")
     }
 

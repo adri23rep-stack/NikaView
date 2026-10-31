@@ -19,7 +19,7 @@ checks={
  "categories keep distinctive primary":'categoryTint(category.filter)' in home,
  "quick access uses same surface":'HomeTintedCardSurface(tint: tint, radius: 16, strength: 0.72)' in home,
  "vault not replaced":'HomeVaultGlow(animated: motionEnabled)' in home,
- "version":project.count("MARKETING_VERSION = 0.12.19;")==2 and project.count("CURRENT_PROJECT_VERSION = 57;")==2
+ "version":project.count("MARKETING_VERSION = 0.12.19;")==2 and project.count("CURRENT_PROJECT_VERSION = 58;")==2
 }
 for name,ok in checks.items():print(("[OK] " if ok else "[FAIL] ")+name)
 assert all(checks.values()),"Two-tone cards regression"

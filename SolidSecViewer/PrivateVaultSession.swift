@@ -211,6 +211,26 @@ final class PrivateVaultSession: ObservableObject {
         try publishStagedEncryptedBackup(staged, previousGeneration: previousGeneration)
     }
 
+    /// Isolate directory/metadata failures without opening encrypted file contents.
+    func diagnosePCBackupInventory() async throws -> String {
+        guard isUnlocked else { throw PrivateVaultError.locked }
+        guard !isBusy, !LANTransferActivity.shared.isActive else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+        isBusy = true
+        defer { isBusy = false }
+        return try await Task.detached(priority: .utility) {
+            try TakopiPCBridge.recordDiagnostic("Prueba: iniciando listado sin leer contenido")
+            let items = try TakopiVaultBackup.inventory(from: Self.vaultRootURL) { stage in
+                try TakopiPCBridge.recordDiagnostic("Prueba de listado: " + stage)
+            }
+            let total = items.reduce(Int64(0)) { $0 + $1.size }
+            let result = "Listado completado: \(items.count) archivos, \(total / (1024 * 1024)) MB. No se leyó su contenido."
+            try TakopiPCBridge.recordDiagnostic(result)
+            return result
+        }.value
+    }
+
     /// Export ciphertext directly to the PC over TCP. No extra archive is created.
     func exportEncryptedPCBackup(host: String, code: String,
                                  progress: @escaping TakopiPCBridge.Progress) async throws {
