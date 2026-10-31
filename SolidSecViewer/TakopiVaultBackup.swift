@@ -90,7 +90,8 @@ enum TakopiVaultBackup {
 
     /// Consistent file inventory for a direct-to-PC backup. Only tiny metadata is
     /// accumulated in memory; ciphertext stays in its original location.
-    static func snapshot(from root: URL) throws -> Manifest {
+    static func snapshot(from root: URL,
+                         progress: (Int64) -> Void = { _ in }) throws -> Manifest {
         let fm = FileManager.default
         var paths = configFiles.sorted()
         for (folder, ext) in [("blobs", "ssvb"), ("thumbnails", "nkt")] {
@@ -110,6 +111,7 @@ enum TakopiVaultBackup {
         paths.sort()
         var total: Int64 = 0
         var records: [FileRecord] = []
+        var checkedBytes: Int64 = 0
         for path in paths {
             try Task.checkCancellation()
             let source = root.appendingPathComponent(path)
@@ -123,8 +125,11 @@ enum TakopiVaultBackup {
             guard !newTotal.overflow, newTotal.partialValue <= maxTotalBytes
             else { throw BackupError.tooManyEntries }
             total = newTotal.partialValue
-            records.append(FileRecord(path: path, size: Int64(bytes),
-                                      sha256: try digest(source)))
+            let hash = try digest(source) { bytesRead in
+                progress(checkedBytes + bytesRead)
+            }
+            checkedBytes += Int64(bytes)
+            records.append(FileRecord(path: path, size: Int64(bytes), sha256: hash))
         }
         return Manifest(format: "takopi-encrypted-vault", version: 1, files: records)
     }
@@ -375,16 +380,30 @@ enum TakopiVaultBackup {
         return false
     }
 
-    static func digest(_ url: URL) throws -> String {
+    static func digest(_ url: URL, progress: (Int64) -> Void = { _ in }) throws -> String {
         let input = try FileHandle(forReadingFrom: url)
         defer { try? input.close() }
         var hasher = SHA256()
+        var processed: Int64 = 0
+        var lastReport: Int64 = 0
         while true {
             try Task.checkCancellation()
-            let data = try input.read(upToCount: 256 * 1024) ?? Data()
-            if data.isEmpty { break }
-            hasher.update(data: data)
+            // Foundation can autorelease NSData backing FileHandle reads. A
+            // detached task has no per-iteration run-loop pool: drain each chunk
+            // before reading the next one, even for multi-GB encrypted blobs.
+            let count: Int = try autoreleasepool {
+                let data = try input.read(upToCount: 256 * 1024) ?? Data()
+                if !data.isEmpty { hasher.update(data: data) }
+                return data.count
+            }
+            if count == 0 { break }
+            processed += Int64(count)
+            if processed - lastReport >= 32 * 1024 * 1024 {
+                lastReport = processed
+                progress(processed)
+            }
         }
+        progress(processed)
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }

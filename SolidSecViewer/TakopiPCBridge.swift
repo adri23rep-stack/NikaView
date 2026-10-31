@@ -28,7 +28,7 @@ enum TakopiPCBridge {
         }
     }
 
-    typealias Progress = (Double, String) -> Void
+    typealias Progress = @Sendable (Double, String) -> Void
     private static let port: UInt16 = 48933
     private static let bufferSize = 256 * 1024
     private static let maxManifest = 32 * 1024 * 1024
@@ -235,7 +235,9 @@ enum TakopiPCBridge {
         notePhase("Leyendo y verificando la bóveda")
         defer { clearPhase() }
         progress(0, "Revisando archivos cifrados…")
-        let manifest = try TakopiVaultBackup.snapshot(from: root)
+        let manifest = try TakopiVaultBackup.snapshot(from: root) { bytes in
+            progress(0, "Verificando bóveda: \(bytes / (1024 * 1024)) MB revisados…")
+        }
         let total = try validate(manifest)
         notePhase("Conectando con Windows")
         progress(0, "Conectando con la PC…")
@@ -260,7 +262,9 @@ enum TakopiPCBridge {
                 var remaining = record.size
                 while remaining > 0 {
                     try Task.checkCancellation()
-                    let data = try handle.read(upToCount: Int(min(Int64(bufferSize), remaining))) ?? Data()
+                    let data = try autoreleasepool {
+                        try handle.read(upToCount: Int(min(Int64(bufferSize), remaining))) ?? Data()
+                    }
                     guard !data.isEmpty else { throw BridgeError.changed }
                     try await socket.send(data)
                     remaining -= Int64(data.count)

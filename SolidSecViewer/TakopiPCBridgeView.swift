@@ -165,7 +165,7 @@ struct TakopiPCBridgeView: View {
         password = ""
 
         let callback: TakopiPCBridge.Progress = { value, file in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.fraction = value
                 self.current = file
             }
