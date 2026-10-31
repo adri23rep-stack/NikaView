@@ -1,0 +1,62 @@
+name: Takopi PC Bridge (Windows)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/TakopiPCBridge/**"
+      - ".github/workflows/takopi-pc-bridge.yml"
+  push:
+    branches: [main, feature/takopi-pc-bridge-streaming]
+    paths:
+      - "tools/TakopiPCBridge/**"
+      - ".github/workflows/takopi-pc-bridge.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  windows-bridge:
+    runs-on: windows-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test streaming and integrity checks
+        run: |
+          python -m py_compile tools/TakopiPCBridge/takopi_pc_bridge.py
+          python -m unittest discover -s tools/TakopiPCBridge -p "test_*.py" -v
+      - name: Package Windows EXE
+        run: |
+          python -m pip install --disable-pip-version-check pyinstaller cryptography "qrcode[pil]"
+          pyinstaller --noconfirm --clean --onefile --windowed --name Takopi-PC-Bridge tools/TakopiPCBridge/takopi_pc_bridge.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Takopi-PC-Bridge-Windows
+          path: dist/Takopi-PC-Bridge.exe
+          if-no-files-found: error
+          retention-days: 30
+      - name: Attach Windows EXE to the matching IPA release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $project = Get-Content 'SolidSecViewer.xcodeproj/project.pbxproj' -Raw
+          $match = [regex]::Match($project, 'MARKETING_VERSION = ([0-9]+\.[0-9]+\.[0-9]+);')
+          if (-not $match.Success) { throw "Missing app version" }
+          $tag = "v$($match.Groups[1].Value)"
+          if (-not (Test-Path 'dist/Takopi-PC-Bridge.exe')) { throw "Missing Windows EXE" }
+          for ($i = 0; $i -lt 90; $i++) {
+            $null = gh release view $tag --json url 2>$null
+            if ($LASTEXITCODE -eq 0) { break }
+            Start-Sleep -Seconds 20
+          }
+          $null = gh release view $tag --json url
+          if ($LASTEXITCODE -ne 0) { throw "IPA release not published for $tag" }
+          gh release upload $tag 'dist/Takopi-PC-Bridge.exe'
+          if ($LASTEXITCODE -ne 0) { throw "Could not upload Windows EXE" }
+          Write-Output "Windows EXE published for $tag"

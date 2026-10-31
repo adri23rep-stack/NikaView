@@ -90,4 +90,6 @@ Este proyecto está distribuido bajo la licencia MIT.
 
 ## Latest release
 
-[Download Takopi Explorer v0.12.20](https://github.com/adri23rep-stack/NikaView/releases/tag/v0.12.20) — redesigned Vault card, bottom Liquid Glass controls preserved.
+[Download Takopi Explorer v0.12.21](https://github.com/adri23rep-stack/NikaView/releases/tag/v0.12.21) — encrypted PC Vault backups, QR pairing, and the minimal Vault UI.
+
+Includes the LiveContainer IPA and the Windows bridge. Verify the Vault backup in Windows before erasing the source.

@@ -29,7 +29,7 @@ checks = {
     "home animations respect low power mode": "motionEnabled" in home and "isLowPowerModeEnabled" in home,
     "vault has no pulsing glow": "HomeVaultGlow" not in home and "strength: 0.58" in home,
     "no fake bubbles": "HomeVaultBubbles" not in home,
-    "version v0.12.9": pbx.count("MARKETING_VERSION = 0.12.20;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 57;") == 2,
+    "version v0.12.9": pbx.count("MARKETING_VERSION = 0.12.21;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 59;") == 2,
 }
 for name, ok in checks.items():
     print(("OK " if ok else "FAIL ") + name)

@@ -27,7 +27,7 @@ checks = {
     "Collision prevention": "occupied.contains($0.name.lowercased())" in session,
     "No cipher file moving": "var updated = entry" in session and "updated.parentID = parentID" in session,
     "New drag source included": "A972" in pbx and "B972" in pbx,
-    "Version correct": pbx.count("MARKETING_VERSION = 0.12.20;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 57;") == 2,
+    "Version correct": pbx.count("MARKETING_VERSION = 0.12.21;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 59;") == 2,
 }
 for label, passed in checks.items():
     print(("[OK] " if passed else "[FAIL] ") + label)
