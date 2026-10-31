@@ -220,13 +220,20 @@ final class PrivateVaultSession: ObservableObject {
         isBusy = true
         defer { isBusy = false }
         return try await Task.detached(priority: .utility) {
-            try TakopiPCBridge.recordDiagnostic("Prueba: iniciando listado sin leer contenido")
+            // Diagnostics are best-effort; never fail an inventory just
+            // because a tiny status log cannot be written on a full iPhone.
+            try? TakopiPCBridge.recordDiagnostic("Prueba: iniciando listado sin leer contenido")
+            var lastDiagnostic = Date.distantPast
             let items = try TakopiVaultBackup.inventory(from: Self.vaultRootURL) { stage in
-                try TakopiPCBridge.recordDiagnostic("Prueba de listado: " + stage)
+                let now = Date()
+                if now.timeIntervalSince(lastDiagnostic) >= 2 {
+                    lastDiagnostic = now
+                    try? TakopiPCBridge.recordDiagnostic("Prueba de listado: " + stage)
+                }
             }
             let total = items.reduce(Int64(0)) { $0 + $1.size }
             let result = "Listado completado: \(items.count) archivos, \(total / (1024 * 1024)) MB. No se leyó su contenido."
-            try TakopiPCBridge.recordDiagnostic(result)
+            try? TakopiPCBridge.recordDiagnostic(result)
             return result
         }.value
     }
