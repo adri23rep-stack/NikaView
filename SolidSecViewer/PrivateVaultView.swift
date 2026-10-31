@@ -51,6 +51,7 @@ struct PrivateVaultView: View {
     @State private var showImporter = false
     @State private var showBackupImportPicker = false
     @State private var showBackupExportPicker = false
+    @State private var showZIPBackupConfirmation = false
     @State private var showPCBackup = false
     @State private var showPCRestore = false
     @State private var backupExportURL: URL?
@@ -124,6 +125,21 @@ struct PrivateVaultView: View {
                     )
                 }
             }
+        }
+        .confirmationDialog(
+            "Exportación cifrada de Takopi Vault",
+            isPresented: $showZIPBackupConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Enviar directo a Windows (recomendado)") {
+                showPCBackup = true
+            }
+            Button("Crear ZIP dentro del iPhone") {
+                exportVaultBackup()
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("El ZIP de Archivos/iCloud necesita espacio temporal extra y puede requerir hasta dos copias. Para respaldar una bóveda grande en la PC sin duplicarla aquí, usa la transferencia directa.")
         }
         .sheet(isPresented: $showPCBackup) {
             TakopiPCBridgeView(operation: .backup).environmentObject(vault)
@@ -1169,9 +1185,9 @@ struct PrivateVaultView: View {
                     }
                     .disabled(backupBusy || vault.isBusy)
                     Button {
-                        exportVaultBackup()
+                        showZIPBackupConfirmation = true
                     } label: {
-                        Label("Exportar copia completa cifrada", systemImage: "externaldrive.badge.plus")
+                        Label("Exportar ZIP a Archivos (requiere espacio)", systemImage: "externaldrive.badge.plus")
                     }
                     .disabled(backupBusy || vault.isBusy)
                     Button {
