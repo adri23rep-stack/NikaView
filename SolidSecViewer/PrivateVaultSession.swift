@@ -199,6 +199,64 @@ final class PrivateVaultSession: ObservableObject {
             throw error
         }
 
+        try publishStagedEncryptedBackup(staged, previousGeneration: previousGeneration)
+    }
+
+    /// Export ciphertext directly to the PC over TCP. No extra archive is created.
+    func exportEncryptedPCBackup(host: String, code: String,
+                                 progress: @escaping TakopiPCBridge.Progress) async throws {
+        guard isUnlocked else { throw PrivateVaultError.locked }
+        guard !isBusy, !LANTransferActivity.shared.isActive else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+        isBusy = true
+        defer { isBusy = false }
+        let expected = generation
+        try await Task.detached(priority: .utility) {
+            try await TakopiPCBridge.backup(
+                host: host, code: code, root: Self.vaultRootURL, progress: progress
+            )
+        }.value
+        guard generation == expected, isUnlocked else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+    }
+
+    /// Restore ciphertext to a sibling directory; authenticate password and
+    /// encrypted index BEFORE replacing the live Vault.
+    func importEncryptedPCBackup(host: String, code: String, password: String,
+                                 progress: @escaping TakopiPCBridge.Progress) async throws {
+        guard !password.isEmpty else { throw PrivateVaultError.wrongPassword }
+        guard !isBusy, !LANTransferActivity.shared.isActive else {
+            throw TakopiVaultBackup.BackupError.vaultChanged
+        }
+        isBusy = true
+        let previousGeneration = generation
+        let staged: URL
+        do {
+            staged = try await Task.detached(priority: .userInitiated) {
+                let stage = try await TakopiPCBridge.receiveRestore(
+                    host: host, code: code, liveVault: Self.vaultRootURL,
+                    progress: progress
+                )
+                do {
+                    try Self.authenticateEncryptedBackup(at: stage, password: password)
+                } catch {
+                    try? FileManager.default.removeItem(at: stage)
+                    throw error
+                }
+                return stage
+            }.value
+        } catch {
+            isBusy = false
+            throw error
+        }
+        try publishStagedEncryptedBackup(staged, previousGeneration: previousGeneration)
+    }
+
+    private func publishStagedEncryptedBackup(
+        _ staged: URL, previousGeneration: UInt64
+    ) throws {
         guard generation == previousGeneration else {
             try? FileManager.default.removeItem(at: staged)
             isBusy = false
