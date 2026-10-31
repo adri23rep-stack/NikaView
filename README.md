@@ -86,3 +86,8 @@ Este proyecto está distribuido bajo la licencia MIT.
 **Tus archivos. Tu red. Tu privacidad.**
 
 </div>
+
+
+## Latest release
+
+[Download Takopi Explorer v0.12.20](https://github.com/adri23rep-stack/NikaView/releases/tag/v0.12.20) — redesigned Vault card, bottom Liquid Glass controls preserved.

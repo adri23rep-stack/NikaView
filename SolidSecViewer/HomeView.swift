@@ -542,60 +542,44 @@ struct HomeView: View {
             HStack(spacing: 12) {
                 NikaidoVaultMark(
                     tint: nikaidoAccent,
-                    size: 44,
-                    onDarkBackground: true
+                    size: 42,
+                    onDarkBackground: false
                 )
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Takopi Vault")
-                        .font(.system(size: 18, weight: .semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.76)
-
-                    Text("Tu espacio privado")
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.78))
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
+
+                    Text("Cifrado · privado")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
 
-                Spacer(minLength: 2)
-
+                Spacer(minLength: 6)
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.82))
+                    .foregroundStyle(.tertiary)
             }
-            .foregroundStyle(.white)
             .padding(.horizontal, 14)
-            .frame(height: 76)
+            .frame(height: 72)
+            // Match other cards: muted two-tone surface in light and dark mode.
+            // No neon block, protruding bubbles, pulsing glow or heavy shadow.
             .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                nikaidoAccent.nikaidoDarkened(0.88),
-                                nikaidoAccent.nikaidoDarkened(0.67)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                HomeTintedCardSurface(
+                    tint: nikaidoAccent,
+                    radius: 20,
+                    strength: 0.58
+                )
             )
-            .overlay {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
-            }
-            .overlay {
-                HomeVaultGlow(animated: motionEnabled)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .shadow(color: nikaidoAccent.opacity(0.12), radius: 8, y: 4)
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(NikaidoPressCardStyle())
-        .accessibilityLabel("Abrir Takopi Vault")
+        .accessibilityLabel("Abrir Takopi Vault, bóveda cifrada privada")
     }
 
     // MARK: Por tipo
@@ -797,23 +781,6 @@ private struct HomeQuickAccessRow: View {
 }
 
 // MARK: - Luz suave, contenida dentro de la tarjeta
-
-private struct HomeVaultGlow: View {
-    let animated: Bool
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: !animated)) { timeline in
-            let time = animated ? timeline.date.timeIntervalSinceReferenceDate : 0
-            let pulse = (sin(time * 1.2) + 1) / 2
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(colors: [.white.opacity(0.08), .white.opacity(0.22 + pulse * 0.20), .clear],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 1.5
-                )
-        }
-    }
-}
 
 // MARK: - Recorrido para añadir carpetas
 

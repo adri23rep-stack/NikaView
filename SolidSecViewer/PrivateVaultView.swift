@@ -877,11 +877,12 @@ struct PrivateVaultView: View {
         .overlay {
             PrivateVaultDragPreview(drag: vaultDrag, pointer: vaultDrag.pointer)
         }
+        // Keep Liquid Glass as a fixed bottom dock, never in the top header.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             browserActions
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
-                .padding(.bottom, 8)
+                .padding(.bottom, 12)
         }
         .searchable(
             text: $vaultSearch,

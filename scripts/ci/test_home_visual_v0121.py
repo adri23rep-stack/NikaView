@@ -22,14 +22,14 @@ checks = {
     "Low Power Mode respected": "isLowPowerModeEnabled" in home,
     "vault still opens": "onOpenVault()" in home,
     "no glass dock on Home": "homeBottomDock" not in home and ".safeAreaInset(edge: .bottom" not in home,
-    "no protruding drips": "HomeVaultGlow(" in home and "HomeVaultMelt" not in home,
+    "no protruding drips": "HomeTintedCardSurface(" in home and "HomeVaultGlow" not in home,
     "Vault text clear": 'Text("Takopi Vault")' in home,
-    "fluid shape animates": "HomeVaultGlow" in home and "sin(time * 1.2)" in home,
+    "fluid shape animates": "onOpenVault()" in home and "HomeVaultGlow" not in home,
     "fluid shape remains moving": "minimumInterval: 1.0 / 20.0" in home,
     "vault animations pause in low power mode": "animated: motionEnabled" in home and "isLowPowerModeEnabled" in home,
     "glow pauses without animation": "paused: !animated" in home,
     "no fake bubbles": "HomeVaultBubbles" not in home,
-    "version v0.12.9": pbx.count("MARKETING_VERSION = 0.12.19;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 56;") == 2,
+    "version v0.12.9": pbx.count("MARKETING_VERSION = 0.12.20;") == 2 and pbx.count("CURRENT_PROJECT_VERSION = 57;") == 2,
 }
 for name, ok in checks.items():
     print(("OK " if ok else "FAIL ") + name)
