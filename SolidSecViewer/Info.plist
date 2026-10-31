@@ -35,6 +35,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Takopi usa la cámara solo al tocar «Escanear QR» para leer la IP y el código temporal de tu PC. No toma fotos ni graba video.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Takopi PC Bridge, Nikaido Link y SMB usan la red local solo si eliges respaldar, restaurar, transferir archivos o conectarte a tu PC/servidor.</string>
 	<!-- Video played through the file explorer can continue in system PiP. -->
