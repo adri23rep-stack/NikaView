@@ -54,7 +54,11 @@ enum TakopiVaultBackup {
     private static func verifyZIPExportCapacity(totalBytes: Int64, at root: URL) throws {
         guard totalBytes >= 0 else { throw BackupError.tooManyEntries }
         let extraZIPMetadata = max(Int64(1 * 1024 * 1024), totalBytes / 1000)
-        let requirement = totalBytes.addingReportingOverflow(extraZIPMetadata)
+        // UIDocumentPicker(forExporting:asCopy:true) can duplicate the ZIP
+        // again for an on-device destination. Reserve room for both copies.
+        let copies = totalBytes.multipliedReportingOverflow(by: 2)
+        guard !copies.overflow else { throw BackupError.tooManyEntries }
+        let requirement = copies.partialValue.addingReportingOverflow(extraZIPMetadata)
         guard !requirement.overflow else { throw BackupError.tooManyEntries }
         let withMargin = requirement.partialValue.addingReportingOverflow(exportSafetyMargin)
         guard !withMargin.overflow else { throw BackupError.tooManyEntries }
